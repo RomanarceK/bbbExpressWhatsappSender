@@ -10,6 +10,7 @@
   "author": "Roman Arce Kessler",
   "license": "MIT",
   "dependencies": {
+    "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "puppeteer": "^22.7.1",
     "whatsapp-web.js": "^1.23.0"

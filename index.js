@@ -1,6 +1,7 @@
 const express = require('express');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const puppeteer = require('puppeteer');
+require("dotenv").config();
 
 const app = express();
 const port = 3001;
@@ -12,7 +13,13 @@ app.listen(port, () => {
 app.use(express.json());
 
 (async () => {
-  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const browser = await puppeteer.launch({ 
+    headless: true, 
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--single-process', '--no-zygote'],
+    executablePath: process.env.NODE_ENV === "production" 
+    ? process.env.PUPPETEER_EXECUTABLE_PATH
+    : puppeteer.executablePath(), 
+  });
   const page = await browser.newPage();
 
   const client = new Client({
