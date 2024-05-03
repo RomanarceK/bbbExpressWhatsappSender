@@ -1,0 +1,17 @@
+{
+  "name": "bbbexpresswhatsappsender",
+  "version": "1.0.0",
+  "description": "Envío de notificación vía Whatsapp para contactar en vivo a un asesor.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "Roman Arce Kessler",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "puppeteer": "^22.7.1",
+    "whatsapp-web.js": "^1.23.0"
+  }
+}
