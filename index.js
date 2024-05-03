@@ -1,7 +1,6 @@
 const express = require('express');
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const puppeteer = require('puppeteer');
 require("dotenv").config();
+const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 const app = express();
 const port = 3001;
@@ -12,73 +11,32 @@ app.listen(port, () => {
 
 app.use(express.json());
 
-(async () => {
-  const browser = await puppeteer.launch({ 
-    headless: true, 
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--single-process', '--no-zygote'],
-    executablePath: process.env.NODE_ENV === "production" 
-    ? process.env.PUPPETEER_EXECUTABLE_PATH
-    : puppeteer.executablePath(), 
-  });
-  const page = await browser.newPage();
+app.post('/send-message', async (req, res) => {
+  // Extraer datos del cuerpo de la solicitud
+  const userData = req.body;
+  const username = userData.username;
+  const phone = userData.phone;
+  const query = userData.query;
 
-  const client = new Client({
-    puppeteer: { browser, page },
-    authStrategy: new LocalAuth({
-      clientId: 'admin'
-    }),
-    webVersionCache: {
-      type: 'remote',
-      remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
-    },
-  });
+  // Construir el mensaje para WhatsApp
+  const message = `¡Hola! El usuario: ${username}, espera ser contactado para responder su consulta sobre una cotización. 
+  Localidad de origen, destino y carga: ${query}. El número de contacto es el siguiente: ${phone}. ¡Muchas gracias!`;
 
-  // Handle WhatsApp events
-  client.on('qr', (qr) => {
-    console.log(`QR received ${qr}`);
-  });
-
-  client.on('ready', () => {
-    console.log('Client is ready');
-  });
-
-  client.on('error', (error) => {
-    console.error('Error:', error);
-  });
-
-  await client.initialize();
-
-  app.post('/send-message', (req, res) => {
-    const userData = req.body;
-    const username = userData.username;
-    const phone = userData.phone;
-    const query = userData.query;
-
-    const message = `¡Hola! El usuario: ${username}, espera ser contactado para responder su consulta sobre una cotización. 
-    Localidad de origen, destino y carga: ${query}. El número de contacto es el siguiente: ${phone}. ¡Muchas gracias!`;
-
-    const asesorNumber = '5493564339696@c.us';
-
-    client.sendMessage(asesorNumber, message)
-      .then(() => {
-        console.log(`Message sent to ${asesorNumber}: ${message}`);
-        res.status(200).send('Message sent successfully');
-      })
-      .catch((error) => {
-        console.error(`Error sending message: ${error}`);
-        res.status(500).send('Error sending message');
-      });
-  });
-
-  app.get('/restart-session', (req, res) => {
-    client.initialize()
-      .then(() => {
-        console.log('Session restarted successfully');
-        res.status(200).send('Session restarted successfully');
-      })
-      .catch((error) => {
-        console.error('Error restarting session:', error);
-        res.status(500).send('Failed to restart session');
-      });
-  });
-})();
+  // Enviar mensaje a WhatsApp
+  try {
+    const response = await client.messages.create({
+      to: 'whatsapp:+5493564640816', // Número del asesor
+      from: 'whatsapp:+14155238886',
+      body: message
+    });
+    if (response) {
+        console.log(`Mensaje enviado a WhatsApp: ${message}`);
+        res.status(200).send('Mensaje enviado exitosamente');
+    } else {
+        console.error(`Error al enviar mensaje`);    
+    }
+  } catch (error) {
+    console.error(`Error al enviar mensaje: ${error}`);
+    res.status(500).send('Error al enviar mensaje');
+  }
+});
