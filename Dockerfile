@@ -1,5 +1,5 @@
 FROM ghcr.io/puppeteer/puppeteer:latest
-RUN apt update && sudo apt install chromium-browser
+RUN apt update && apt install chromium-browser
 RUN which google-chrome-stable
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
