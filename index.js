@@ -26,7 +26,7 @@ app.post('/send-message', async (req, res) => {
   try {
     const response = await client.messages.create({
       to: 'whatsapp:+5493564640816', // Número del asesor
-      from: 'whatsapp:+14155238886',
+      from: 'whatsapp:+18623226003',
       body: message
     });
     if (response) {
