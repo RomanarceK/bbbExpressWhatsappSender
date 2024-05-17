@@ -1,6 +1,7 @@
 const express = require('express');
 const xml2js = require('xml2js');
 const bodyParser = require('body-parser');
+const moment = require('moment');
 require("dotenv").config();
 const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
@@ -56,8 +57,9 @@ app.post('/consultar-envio', async (req, res) => {
 
       const comentario = result['soap:Envelope']['soap:Body'][0]['Trazabilidad_EnvioResponse'][0]['Trazabilidad_EnvioResult'][0]['diffgr:diffgram'][0]['NewDataSet'][0]['Table'][0]['comentario'][0];
       const fechayhora = result['soap:Envelope']['soap:Body'][0]['Trazabilidad_EnvioResponse'][0]['Trazabilidad_EnvioResult'][0]['diffgr:diffgram'][0]['NewDataSet'][0]['Table'][0]['fechayhora'][0];
+      const fechaParseada = moment.utc(fechayhora).format('DD--MM--YYYY');
 
-      const mensaje = `El estado de su envío es: ${comentario}, y la última actualización fue el: ${fechayhora}`;
+      const mensaje = `El estado de su envío es: ${comentario}, y la última actualización fue el: ${fechaParseada}`;
       res.status(200).send(mensaje);
     });
   } catch (error) {
