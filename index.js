@@ -21,19 +21,18 @@ app.post('/send-message', async (req, res) => {
   const phone = userData.phone;
   const query = userData.query;
   
-  const body = {
-    "template_sid": "HX9b638f2528bb6a26939ccbe2d6ccf6ca",
-    "variables": {
-      "username": username,
-      "query": query,
-      "phone": phone
-    }
-  };
+  const body = "¡Hola! El usuario: {{1}}, espera ser contactado para responder su consulta sobre una cotización. Localidad de origen, destino y carga: {{2}}. El número de contacto es el siguiente: {{3}}. ¡Muchas gracias!";
 
   try {
     const response = await client.messages.create({
       to: 'whatsapp:+5493564339696',
       from: 'whatsapp:+15304530886',
+      template_sid: "HX9b638f2528bb6a26939ccbe2d6ccf6ca",
+      variables: {
+        "username": username,
+        "query": query,
+        "phone": phone
+      },
       body: body
     });
 
