@@ -32,7 +32,7 @@ app.post('/send-message', async (req, res) => {
 
   try {
     const response = await client.messages.create({
-      to: 'whatsapp:+5493564522800',
+      to: 'whatsapp:+5493564339696',
       from: 'whatsapp:+15304530886',
       body: body
     });
