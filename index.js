@@ -33,7 +33,7 @@ app.post('/send-message', async (req, res) => {
         "query": query,
         "phone": phone
       },
-      body: body
+      message: body,
     });
 
     if (response) {
