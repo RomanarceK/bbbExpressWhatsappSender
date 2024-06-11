@@ -20,28 +20,48 @@ app.post('/send-message', async (req, res) => {
   const username = userData.username;
   const phone = userData.phone;
   const query = userData.query;
-  
-  const body = "¡Hola! El usuario: {{1}}, espera ser contactado para responder su consulta sobre una cotización. Localidad de origen, destino y carga: {{2}}. El número de contacto es el siguiente: {{3}}. ¡Muchas gracias!";
+
+  const templateSid = 'HX9b638f2528bb6a26939ccbe2d6ccf6ca';
+
+  const components = [
+    {
+      type: 'body',
+      parameters: [
+        {
+          type: 'text',
+          text: username
+        },
+        {
+          type: 'text',
+          text: query
+        },
+        {
+          type: 'text',
+          text: phone
+        }
+      ]
+    }
+  ];
 
   try {
     const response = await client.messages.create({
       to: 'whatsapp:+5493564339696',
       from: 'whatsapp:+15304530886',
-      template_sid: "HX9b638f2528bb6a26939ccbe2d6ccf6ca",
-      variables: {
-        "username": username,
-        "query": query,
-        "phone": phone
-      },
-      message: body,
-      body: body
+      template: {
+        name: templateSid,
+        language: {
+          code: 'es'
+        },
+        components: components
+      }
     });
 
     if (response) {
-        console.log(`Mensaje enviado a WhatsApp: ${message}`);
+        console.log(`Mensaje enviado a WhatsApp con el template: ${JSON.stringify(components)}`);
         res.status(200).send('Mensaje enviado exitosamente');
     } else {
-        console.error(`Error al enviar mensaje`);    
+        console.error(`Error al enviar mensaje`);
+        res.status(500).send('Error al enviar mensaje');
     }
   } catch (error) {
     console.error(`Error al enviar mensaje: ${error}`);
