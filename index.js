@@ -31,7 +31,7 @@ app.post('/send-message', async (req, res) => {
           3: phone
         }),
         messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
-        to: 'whatsapp:+5493564640816'
+        to: 'whatsapp:+5493564522800'
     });
 
     if (response) {
