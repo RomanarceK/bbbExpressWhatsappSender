@@ -23,27 +23,27 @@ app.post('/send-message', async (req, res) => {
 
   try {
     const response = await client.messages.create({
-        contentSid: 'HX9b638f2528bb6a26939ccbe2d6ccf6ca',
-        from: 'whatsapp:+15304530886',
-        contentVariables: JSON.stringify({
-          1: username,
-          2: query,
-          3: phone
-        }),
-        messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
-        to: 'whatsapp:+5493564522800'
+      contentSid: 'HX9b638f2528bb6a26939ccbe2d6ccf6ca',
+      from: 'whatsapp:+15304530886',
+      contentVariables: JSON.stringify({
+        1: username,
+        2: query,
+        3: phone
+      }),
+      messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
+      to: `whatsapp:+5493564522800`
     });
 
-    if (response) {
-        console.log(`Mensaje enviado a WhatsApp: ${phone}`);
-        res.status(200).send('Mensaje enviado exitosamente a: ', phone);
+    if (response.sid) {
+      console.log(`Mensaje enviado a WhatsApp: ${phone}`);
+      res.status(200).send(`Mensaje enviado exitosamente a: ${phone}`);
     } else {
-        console.error(`Error al enviar mensaje`);
-        res.status(500).send('Error al enviar mensaje');
+      console.error('Error al enviar mensaje, respuesta sin SID.');
+      res.status(500).send('Error al enviar mensaje');
     }
   } catch (error) {
-    console.error(`Error al enviar mensaje: ${error}`);
-    res.status(500).send('Error al enviar mensaje');
+    console.error(`Error al enviar mensaje: ${error.message}`);
+    res.status(500).send(`Error al enviar mensaje: ${error.message}`);
   }
 });
 
