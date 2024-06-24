@@ -24,7 +24,7 @@ app.post('/send-message', async (req, res) => {
   try {
     const response = await client.messages.create({
         contentSid: 'HX9b638f2528bb6a26939ccbe2d6ccf6ca',
-        from: '+15304530886',
+        from: 'whatsapp:+15304530886',
         contentVariables: JSON.stringify({
           1: username,
           2: query,
@@ -33,8 +33,6 @@ app.post('/send-message', async (req, res) => {
         messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
         to: 'whatsapp:+5493564522800'
     });
-
-    console.log(response);
 
     if (response) {
         console.log(`Mensaje enviado a WhatsApp: ${phone}`);
