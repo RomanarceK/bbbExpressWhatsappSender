@@ -15,6 +15,8 @@ app.listen(port, () => {
 app.use(express.json());
 app.use(bodyParser.raw({ type: '*/*' }));
 
+const conversations = {};
+
 app.post('/send-message', async (req, res) => {
   const userData = req.body;
   const username = userData.username;
@@ -24,14 +26,14 @@ app.post('/send-message', async (req, res) => {
   try {
     const response = await client.messages.create({
       contentSid: 'HX9b638f2528bb6a26939ccbe2d6ccf6ca',
-      from: '+15304530886',
+      from: 'whatsapp:+15304530886',
       contentVariables: JSON.stringify({
         1: username,
         2: query,
         3: phone
       }),
       messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
-      to: '+5493564522800'
+      to: 'whatsapp:+5493564522800'
     });
 
     if (response.sid) {
@@ -93,3 +95,148 @@ app.post('/crear-pedido', (req, res) => {
     res.status(400).send('Error al parsear XML');
   }
 });
+
+// Nueva ruta para iniciar una conversación en Slack cuando se solicita un asesor
+app.post('/live-asesor', async (req, res) => {
+  const { user_id, user_message } = req.body;
+
+  try {
+    // Crear un canal en Slack para el usuario
+    const slackChannel = await createSlackChannel(user_id);
+    await sendMessageToSlack(slackChannel, user_message);
+
+    // Guardar la conversación en memoria
+    conversations[user_id] = slackChannel;
+
+    res.status(200).send({
+      message: 'Conversación iniciada en Slack',
+      data: {
+        user_id: user_id,
+        slack_channel: slackChannel,
+        user_message: user_message
+      }
+    });
+  } catch (error) {
+    console.error(`Error al iniciar la conversación en Slack: ${error.message}`);
+    res.status(500).send(`Error al iniciar la conversación en Slack: ${error.message}`);
+  }
+});
+
+// Ruta para recibir mensajes de WhatsApp desde Twilio
+app.post('/whatsapp-webhook', async (req, res) => {
+  const userMessage = req.body.message;
+  const userId = req.body.from;
+
+  try {
+    // Recuperar el canal de Slack correspondiente
+    const slackChannel = conversations[userId];
+    if (!slackChannel) {
+      // Crear un canal en Slack para el usuario
+      const slackChannel = await createSlackChannel(userId);
+      await sendMessageToSlack(slackChannel, user_message);
+      
+      res.status(200).send({
+        message: 'Mensaje recibido y enviado a Slack',
+        data: {
+          user_id: userId,
+          slack_channel: slackChannel,
+          user_message: userMessage
+        }
+      });
+    } else {
+      await sendMessageToSlack(slackChannel, userMessage);
+
+      res.status(200).send({
+        message: 'Mensaje recibido y enviado a Slack',
+        data: {
+          user_id: userId,
+          slack_channel: slackChannel,
+          user_message: userMessage
+        }
+      });
+    }
+  } catch (error) {
+    console.error(`Error al recibir el mensaje de WhatsApp: ${error.message}`);
+    res.status(500).send(`Error al recibir el mensaje de WhatsApp: ${error.message}`);
+  }
+});
+
+app.post('/slack-webhook', async (req, res) => {
+  const { event } = req.body;
+
+  if (event && event.type === 'message' && !event.bot_id) {
+    const slackChannel = event.channel;
+    const userMessage = event.text;
+    const userId = Object.keys(conversations).find(key => conversations[key] === slackChannel);
+
+    if (userId) {
+      try {
+        await sendMessageToWhatsApp(userId, userMessage);
+        res.status(200).send('Mensaje enviado a WhatsApp');
+      } catch (error) {
+        console.error(`Error al enviar el mensaje a WhatsApp: ${error.message}`);
+        res.status(500).send(`Error al enviar el mensaje a WhatsApp: ${error.message}`);
+      }
+    } else {
+      res.status(404).send('Usuario no encontrado para el canal de Slack');
+    }
+  } else {
+    res.status(200).send('Evento no procesado');
+  }
+});
+
+app.post('/activate', (req, res) => {
+  const { type, challenge } = req.body;
+
+  if (type === 'url_verification') {
+    // Responder con el desafío para verificar la URL
+    res.status(200).send({ challenge });
+  } else {
+    // Procesar otros eventos de Slack
+    res.status(200).send('Evento recibido');
+  }
+});
+
+// Función para crear un canal en Slack
+async function createSlackChannel(userId) {
+  const slackToken = process.env.SLACK_BOT_TOKEN;
+  const slackUrl = 'https://slack.com/api/conversations.create';
+  const response = await axios.post(slackUrl, {
+    name: `user-${userId}`,
+  }, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${slackToken}`
+    }
+  });
+
+  if (response.data.ok) {
+    return response.data.channel.id;
+  } else {
+    throw new Error('Error al crear el canal en Slack');
+  }
+}
+
+// Función para enviar un mensaje a Slack
+async function sendMessageToSlack(channel, message) {
+  const slackToken = process.env.SLACK_BOT_TOKEN;
+  const slackUrl = 'https://slack.com/api/chat.postMessage';
+  await axios.post(slackUrl, {
+    channel: channel,
+    text: message,
+  }, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${slackToken}`
+    }
+  });
+}
+
+// Función para enviar un mensaje a WhatsApp usando Twilio
+async function sendMessageToWhatsApp(to, message) {
+  await client.messages.create({
+    from: 'whatsapp:+15304530886',
+    body: message,
+    to: `whatsapp:${to}`
+  });
+}
