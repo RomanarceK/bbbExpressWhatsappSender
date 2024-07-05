@@ -164,7 +164,8 @@ app.post('/whatsapp-webhook', async (req, res) => {
   }
 });
 
-app.post('/slack-webhook', async (req, res) => {
+// Slack Webhook
+app.post('/activate', async (req, res) => {
   const { event } = req.body;
   console.log(event);
 
@@ -201,18 +202,6 @@ app.post('/slack-webhook', async (req, res) => {
     }
   } else {
     res.status(200).send('Evento no procesado');
-  }
-});
-
-app.post('/activate', (req, res) => {
-  const { type, challenge } = req.body;
-
-  if (type === 'url_verification') {
-    // Responder con el desafío para verificar la URL
-    res.status(200).send({ challenge });
-  } else {
-    // Procesar otros eventos de Slack
-    res.status(200).send('Evento recibido');
   }
 });
 
