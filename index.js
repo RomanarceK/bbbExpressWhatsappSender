@@ -209,7 +209,8 @@ app.post('/activate', async (req, res) => {
 
 // Función para crear un canal en Slack
 async function createSlackChannel(userId) {
-  const slackToken = process.env.SLACK_BOT_TOKEN;
+  const slackToken = process.env.SLACK_API_BOT_TOKEN;
+  console.log(slackToken);
   const slackUrl = 'https://slack.com/api/conversations.create';
   const response = await axios.post(slackUrl, {
     name: `user-${userId}`,
