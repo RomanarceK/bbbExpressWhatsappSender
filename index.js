@@ -217,7 +217,7 @@ async function createSlackChannel(userId) {
       'Authorization': `Bearer ${slackToken}`
     }
   });
-
+  console.log(response);
   if (response.data.ok) {
     return response.data.channel.id;
   } else {
@@ -229,7 +229,7 @@ async function createSlackChannel(userId) {
 async function sendMessageToSlack(channel, message) {
   const slackToken = process.env.SLACK_BOT_TOKEN;
   const slackUrl = 'https://slack.com/api/chat.postMessage';
-  await axios.post(slackUrl, {
+  const response = await axios.post(slackUrl, {
     channel: channel,
     text: message,
   }, {
@@ -238,6 +238,10 @@ async function sendMessageToSlack(channel, message) {
       'Authorization': `Bearer ${slackToken}`
     }
   });
+  console.log('slack msg response: ', response);
+  if (!response.data) {
+    throw new Error('Error al enviar la señal a Chatfuel');
+  }
 }
 
 // Función para enviar una señal a Chatfuel
