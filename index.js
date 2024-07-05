@@ -106,7 +106,7 @@ app.post('/live-asesor', async (req, res) => {
 
   try {
     // Crear un canal en Slack para el usuario
-    const slackChannel = await createSlackChannel(formattedUserId);
+    const slackChannel = await createSlackChannel(user_id);
 
     // Guardar la conversación en memoria
     conversations[formattedUserId] = slackChannel;
@@ -132,10 +132,11 @@ app.post('/live-asesor', async (req, res) => {
 app.post('/whatsapp-webhook', async (req, res) => {
   const userMessage = req.body.message;
   const userId = req.body.from;
+  const formattedUserId = "+" + userId;
 
   try {
     // Recuperar el canal de Slack correspondiente
-    const slackChannel = conversations[userId];
+    const slackChannel = conversations[formattedUserId];
     if (!slackChannel) {
       // Crear un canal en Slack para el usuario
       const slackChannel = await createSlackChannel(userId);
@@ -213,7 +214,7 @@ async function createSlackChannel(userId) {
   console.log(slackToken);
   const slackUrl = 'https://slack.com/api/conversations.create';
   const response = await axios.post(slackUrl, {
-    name: `user-${userId}`,
+    name: `user${userId}`,
     token: slackToken
   }, {
     headers: {
