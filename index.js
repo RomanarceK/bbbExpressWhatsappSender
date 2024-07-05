@@ -214,10 +214,11 @@ async function createSlackChannel(userId) {
   const slackUrl = 'https://slack.com/api/conversations.create';
   const response = await axios.post(slackUrl, {
     name: `user-${userId}`,
+    token: slackToken
   }, {
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${slackToken}`
+      'Token': `Bearer ${slackToken}`
     }
   });
   console.log('slack channel create response: ', response);
@@ -235,10 +236,11 @@ async function sendMessageToSlack(channel, message) {
   const response = await axios.post(slackUrl, {
     channel: channel,
     text: message,
+    token: slackToken
   }, {
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${slackToken}`
+      'Token': `Bearer ${slackToken}`
     }
   });
   console.log('slack msg response: ', response);
