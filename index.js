@@ -230,7 +230,7 @@ async function createSlackChannel(userId) {
 
 // Función para enviar un mensaje a Slack
 async function sendMessageToSlack(channel, message) {
-  const slackToken = process.env.SLACK_BOT_TOKEN;
+  const slackToken = process.env.SLACK_API_BOT_TOKEN;
   const slackUrl = 'https://slack.com/api/chat.postMessage';
   const response = await axios.post(slackUrl, {
     channel: channel,
