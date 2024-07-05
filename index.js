@@ -16,6 +16,7 @@ app.use(express.json());
 app.use(bodyParser.raw({ type: '*/*' }));
 
 const conversations = {};
+const chatfuelUsers = {};
 
 app.post('/send-message', async (req, res) => {
   const userData = req.body;
@@ -98,15 +99,17 @@ app.post('/crear-pedido', (req, res) => {
 
 // Nueva ruta para iniciar una conversación en Slack cuando se solicita un asesor
 app.post('/live-asesor', async (req, res) => {
-  const { user_id, user_message } = req.body;
+  const { user_id, user_message, chatfuel_user_id } = req.body;
 
   try {
     // Crear un canal en Slack para el usuario
     const slackChannel = await createSlackChannel(user_id);
-    await sendMessageToSlack(slackChannel, user_message);
 
     // Guardar la conversación en memoria
     conversations[user_id] = slackChannel;
+    chatfuelUsers[user_id] = chatfuel_user_id;
+
+    await sendMessageToSlack(slackChannel, user_message);
 
     res.status(200).send({
       message: 'Conversación iniciada en Slack',
@@ -133,7 +136,7 @@ app.post('/whatsapp-webhook', async (req, res) => {
     if (!slackChannel) {
       // Crear un canal en Slack para el usuario
       const slackChannel = await createSlackChannel(userId);
-      await sendMessageToSlack(slackChannel, user_message);
+      await sendMessageToSlack(slackChannel, userMessage);
       
       res.status(200).send({
         message: 'Mensaje recibido y enviado a Slack',
@@ -161,7 +164,7 @@ app.post('/whatsapp-webhook', async (req, res) => {
   }
 });
 
-app.post('/activate', async (req, res) => {
+app.post('/slack-webhook', async (req, res) => {
   const { event } = req.body;
   console.log(event);
 
@@ -170,19 +173,46 @@ app.post('/activate', async (req, res) => {
     const userMessage = event.text;
     const userId = Object.keys(conversations).find(key => conversations[key] === slackChannel);
 
-    if (userId) {
-      try {
-        await sendMessageToWhatsApp(userId, userMessage);
-        res.status(200).send('Mensaje enviado a WhatsApp');
-      } catch (error) {
-        console.error(`Error al enviar el mensaje a WhatsApp: ${error.message}`);
-        res.status(500).send(`Error al enviar el mensaje a WhatsApp: ${error.message}`);
+    if (userMessage.trim() === '/fin') {
+      // Finalizar la conversación
+      if (userId) {
+        delete conversations[userId];
+
+        // Aquí puedes agregar el código para enviar una señal a Chatfuel para reanudar el flujo
+        await sendSignalToChatfuel(userId);
+
+        res.status(200).send('Conversación finalizada y flujo de Chatfuel reanudado');
+      } else {
+        res.status(404).send('Usuario no encontrado para el canal de Slack');
       }
     } else {
-      res.status(404).send('Usuario no encontrado para el canal de Slack');
+      // Continuar la conversación normal
+      if (userId) {
+        try {
+          await sendMessageToWhatsApp(userId, userMessage);
+          res.status(200).send('Mensaje enviado a WhatsApp');
+        } catch (error) {
+          console.error(`Error al enviar el mensaje a WhatsApp: ${error.message}`);
+          res.status(500).send(`Error al enviar el mensaje a WhatsApp: ${error.message}`);
+        }
+      } else {
+        res.status(404).send('Usuario no encontrado para el canal de Slack');
+      }
     }
   } else {
     res.status(200).send('Evento no procesado');
+  }
+});
+
+app.post('/activate', (req, res) => {
+  const { type, challenge } = req.body;
+
+  if (type === 'url_verification') {
+    // Responder con el desafío para verificar la URL
+    res.status(200).send({ challenge });
+  } else {
+    // Procesar otros eventos de Slack
+    res.status(200).send('Evento recibido');
   }
 });
 
@@ -219,6 +249,24 @@ async function sendMessageToSlack(channel, message) {
       'Authorization': `Bearer ${slackToken}`
     }
   });
+}
+
+// Función para enviar una señal a Chatfuel
+async function sendSignalToChatfuel(userId) {
+  const chatfuelUserId = chatfuelUsers[userId];
+  const makeUrl = `https://hook.eu2.make.com/5vn8ko3mj12wh5up1p7osnug656v0qlx`;
+  const response = await axios.post(makeUrl, {
+    block_name: 'Flow',
+    user_id: chatfuelUserId
+  }, {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.data.success) {
+    throw new Error('Error al enviar la señal a Chatfuel');
+  }
 }
 
 // Función para enviar un mensaje a WhatsApp usando Twilio
