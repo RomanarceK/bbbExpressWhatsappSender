@@ -101,14 +101,16 @@ app.post('/crear-pedido', (req, res) => {
 // Nueva ruta para iniciar una conversación en Slack cuando se solicita un asesor
 app.post('/live-asesor', async (req, res) => {
   const { user_id, user_message, chatfuel_user_id } = req.body;
+  const formattedUserId = "+" + user_id;
+  console.log(formattedUserId);
 
   try {
     // Crear un canal en Slack para el usuario
-    const slackChannel = await createSlackChannel(user_id);
+    const slackChannel = await createSlackChannel(formattedUserId);
 
     // Guardar la conversación en memoria
-    conversations[user_id] = slackChannel;
-    chatfuelUsers[user_id] = chatfuel_user_id;
+    conversations[formattedUserId] = slackChannel;
+    chatfuelUsers[formattedUserId] = chatfuel_user_id;
 
     await sendMessageToSlack(slackChannel, user_message);
 
@@ -217,7 +219,7 @@ async function createSlackChannel(userId) {
       'Authorization': `Bearer ${slackToken}`
     }
   });
-  console.log(response);
+  console.log('slack channel create response: ', response);
   if (response.data.ok) {
     return response.data.channel.id;
   } else {
