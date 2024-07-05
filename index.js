@@ -302,7 +302,7 @@ async function findSlackChannelByName(channelName) {
   const slackUrl = 'https://slack.com/api/conversations.list';
   
   try {
-    const response = await axios.get(slackUrl, {
+    const response = await axios.get(slackUrl, {token: slackToken},{
       headers: {
         'Authorization': `Bearer ${slackToken}`
       },
