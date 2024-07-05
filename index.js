@@ -298,7 +298,9 @@ async function sendMessageToWhatsApp(to, message) {
 }
 
 async function findSlackChannelByName(channelName) {
+  console.log('Channel name: ', channelName);
   const slackToken = process.env.SLACK_API_BOT_TOKEN;
+  console.log(slackToken);
   const slackUrl = 'https://slack.com/api/conversations.list';
   
   try {
