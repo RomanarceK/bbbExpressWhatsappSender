@@ -218,7 +218,7 @@ async function createSlackChannel(userId) {
   }, {
     headers: {
       'Content-Type': 'application/json',
-      'Token': `Bearer ${slackToken}`
+      'Authorization': `Bearer ${slackToken}`
     }
   });
   console.log('slack channel create response: ', response);
@@ -240,7 +240,7 @@ async function sendMessageToSlack(channel, message) {
   }, {
     headers: {
       'Content-Type': 'application/json',
-      'Token': `Bearer ${slackToken}`
+      'Authorization': `Bearer ${slackToken}`
     }
   });
   console.log('slack msg response: ', response);
