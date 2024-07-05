@@ -102,7 +102,7 @@ app.post('/crear-pedido', (req, res) => {
 app.post('/live-asesor', async (req, res) => {
   const { user_id, user_message, chatfuel_user_id } = req.body;
   const formattedUserId = "+" + user_id;
-  console.log(formattedUserId);
+  console.log('Chatfuel formatted userId: ', formattedUserId);
 
   try {
     // Crear un canal en Slack para el usuario
@@ -111,6 +111,8 @@ app.post('/live-asesor', async (req, res) => {
     // Guardar la conversación en memoria
     conversations[formattedUserId] = slackChannel;
     chatfuelUsers[formattedUserId] = chatfuel_user_id;
+    console.log('Conversations: ', conversations);
+    console.log('Chatfuel Users: ', chatfuelUsers);
 
     await sendMessageToSlack(slackChannel, user_message);
 
@@ -177,7 +179,9 @@ app.post('/activate', async (req, res) => {
     const userMessage = event.text;
     const userId = Object.keys(conversations).find(key => conversations[key] === slackChannel);
     console.log('User ID: ', userId);
+    console.log('Slack Channel: ', slackChannel);
     if (userMessage.trim() === '/fin') {
+      console.log('Pasa en el trim del command');
       // Finalizar la conversación
       if (userId) {
         delete conversations[userId];
@@ -192,6 +196,8 @@ app.post('/activate', async (req, res) => {
     } else {
       // Continuar la conversación normal
       if (userId) {
+        console.log('Send Wpp Msg: ', userId);
+        console.log('Send Wpp Msg content: ', userMessage);
         try {
           await sendMessageToWhatsApp(userId, userMessage);
           res.status(200).send('Mensaje enviado a WhatsApp');
@@ -211,7 +217,6 @@ app.post('/activate', async (req, res) => {
 // Función para crear un canal en Slack
 async function createSlackChannel(userId) {
   const slackToken = process.env.SLACK_API_BOT_TOKEN;
-  console.log(slackToken);
   const slackUrl = 'https://slack.com/api/conversations.create';
   const response = await axios.post(slackUrl, {
     name: `user${userId}`,
@@ -222,7 +227,7 @@ async function createSlackChannel(userId) {
       'Authorization': `Bearer ${slackToken}`
     }
   });
-  console.log('slack channel create response: ', response);
+  console.log('slack channel create response: ', response.data);
   if (response.data.ok) {
     return response.data.channel.id;
   } else {
@@ -244,9 +249,11 @@ async function sendMessageToSlack(channel, message) {
       'Authorization': `Bearer ${slackToken}`
     }
   });
-  console.log('slack msg response: ', response);
+  console.log('slack msg response: ', response.data);
   if (!response.data) {
     throw new Error('Error al enviar la señal a Chatfuel');
+  } else {
+    return response.data.ok;
   }
 }
 
@@ -271,8 +278,8 @@ async function sendSignalToChatfuel(userId) {
 // Función para enviar un mensaje a WhatsApp usando Twilio
 async function sendMessageToWhatsApp(to, message) {
   await client.messages.create({
-    from: 'whatsapp:+15304530886',
+    from: '+15304530886',
     body: message,
-    to: `whatsapp:${to}`
+    to: `${to}`
   });
 }
