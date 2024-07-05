@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const moment = require('moment');
 require("dotenv").config();
 const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+const axios = require('axios');
 
 const app = express();
 const port = 3001;
@@ -167,13 +168,12 @@ app.post('/whatsapp-webhook', async (req, res) => {
 // Slack Webhook
 app.post('/activate', async (req, res) => {
   const { event } = req.body;
-  console.log(event);
 
   if (event && event.type === 'message' && !event.bot_id) {
     const slackChannel = event.channel;
     const userMessage = event.text;
     const userId = Object.keys(conversations).find(key => conversations[key] === slackChannel);
-
+    console.log('User ID: ', userId);
     if (userMessage.trim() === '/fin') {
       // Finalizar la conversación
       if (userId) {
