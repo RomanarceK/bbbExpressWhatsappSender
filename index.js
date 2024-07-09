@@ -107,6 +107,7 @@ app.post('/live-asesor', async (req, res) => {
   try {
     // Crear un canal en Slack para el usuario
     const slackChannel = await createSlackChannel(user_id);
+    console.log('slackChannel: ', slackChannel);
 
     // Guardar la conversación en memoria
     conversations[formattedUserId] = slackChannel;
@@ -217,9 +218,9 @@ app.post('/activate', async (req, res) => {
 // Función para crear un canal en Slack
 async function createSlackChannel(userId) {
   const channelName = `user${userId}`;
-  const channelId = conversations[channelName];
-  console.log('channelId to archive: ', channelId);
-  await archiveSlackChannel(channelId);
+  // const channelId = conversations[channelName];
+  // console.log('channelId to archive: ', channelId);
+  // await archiveSlackChannel(channelId);
 
   const slackToken = process.env.SLACK_API_BOT_TOKEN;
   const slackUrl = 'https://slack.com/api/conversations.create';
