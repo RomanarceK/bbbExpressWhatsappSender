@@ -107,8 +107,11 @@ app.post('/live-asesor', async (req, res) => {
   try {
     // Verificar si el canal ya existe, excluyendo los archivados
     let slackChannel = await getSlackChannelFromGoogleSheets(user_id);
+    console.log('Slack Channel response: ', slackChannel);
 
     if (slackChannel !== '') {
+      console.log("Pasa erróneamente");
+      console.log('Condition response: ', slackChannel !== '');
       // Crear un canal en Slack para el usuario
       slackChannel = await createSlackChannel(user_id);
       await sendToGoogleSheets(user_id, slackChannel, chatfuel_user_id);
@@ -134,6 +137,7 @@ app.post('/live-asesor', async (req, res) => {
 
 // Ruta para recibir mensajes de WhatsApp desde Twilio
 app.post('/whatsapp-webhook', async (req, res) => {
+  console.log('Pasa acá?');
   const userMessage = req.body.message;
   const userId = req.body.from;
   const formattedUserId = "+" + userId;
@@ -248,6 +252,7 @@ async function createSlackChannel(userId) {
 async function sendMessageToSlack(channel, message) {
   const slackToken = process.env.SLACK_API_BOT_TOKEN;
   const slackUrl = 'https://slack.com/api/chat.postMessage';
+  console.log('Debug sender slack channel: ', channel, 'Message: ', message);
   const response = await axios.post(slackUrl, {
     channel: channel,
     text: message,
