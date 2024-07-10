@@ -376,7 +376,7 @@ async function sendWhatsAppTemplateMessage(to) {
   const from = 'whatsapp:+17074021487';
 
   try {
-    await client.messages.create({
+    const response = await client.messages.create({
       from: from,
       to: `whatsapp:+${to}`,
       contentSid: 'HX3e96a2927835cbb7a31f28648fa87542',
@@ -385,7 +385,9 @@ async function sendWhatsAppTemplateMessage(to) {
       }),
       messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1'
     });
-    console.log('Mensaje de plantilla enviado a WhatsApp');
+
+    console.log(response.data);
+    return;
   } catch (error) {
     console.error(`Error al enviar el mensaje de plantilla a WhatsApp: ${error.message}`);
   }
