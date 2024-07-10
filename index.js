@@ -142,8 +142,9 @@ app.post('/whatsapp-webhook', async (req, res) => {
   try {
     // Recuperar el canal de Slack correspondiente
     let slackChannel = await getSlackChannelFromGoogleSheets(userId);
+    await sendWhatsAppTemplateMessage(userId);
 
-    if (!slackChannel) {
+    if (slackChannel === '' || slackChannel === undefined) {
       // Crear un canal en Slack para el usuario y enviar mensaje de plantilla para iniciar conversación
       slackChannel = await createSlackChannel(userId);
       await sendWhatsAppTemplateMessage(userId);
