@@ -141,10 +141,12 @@ app.post('/whatsapp-webhook', async (req, res) => {
 
   try {
     // Recuperar el canal de Slack correspondiente
-    const slackChannel = conversations[formattedUserId];
+    let slackChannel = await getSlackChannelFromGoogleSheets(userId);
+
     if (!slackChannel) {
-      // Crear un canal en Slack para el usuario
-      const slackChannel = await createSlackChannel(userId);
+      // Crear un canal en Slack para el usuario y enviar mensaje de plantilla para iniciar conversación
+      slackChannel = await createSlackChannel(userId);
+      await sendWhatsAppTemplateMessage(userId);
       await sendMessageToSlack(slackChannel, userMessage);
       
       res.status(200).send({
@@ -172,6 +174,7 @@ app.post('/whatsapp-webhook', async (req, res) => {
     res.status(500).send(`Error al recibir el mensaje de WhatsApp: ${error.message}`);
   }
 });
+
 
 // Slack Webhook
 app.post('/activate', async (req, res) => {
@@ -366,3 +369,23 @@ const getWhatsappNumberFromGoogleSheets = async (channel_id) => {
     throw error;
   }
 };
+
+// Función para enviar un mensaje de plantilla a WhatsApp usando Twilio
+async function sendWhatsAppTemplateMessage(to) {
+  const from = 'whatsapp:+17074021487';
+
+  try {
+    await client.messages.create({
+      from: from,
+      to: `whatsapp:+${to}`,
+      contentSid: 'HX3e96a2927835cbb7a31f28648fa87542',
+      contentVariables: JSON.stringify({
+        1:"Estudio Giletta"
+      }),
+      messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1'
+    });
+    console.log('Mensaje de plantilla enviado a WhatsApp');
+  } catch (error) {
+    console.error(`Error al enviar el mensaje de plantilla a WhatsApp: ${error.message}`);
+  }
+}
