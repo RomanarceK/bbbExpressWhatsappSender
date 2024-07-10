@@ -105,15 +105,16 @@ app.post('/live-asesor', async (req, res) => {
   console.log('Chatfuel formatted userId: ', formattedUserId);
 
   try {
-    // Crear un canal en Slack para el usuario
-    const slackChannel = await createSlackChannel(user_id);
-    console.log('slackChannel: ', slackChannel);
+    // Verificar si el canal ya existe, excluyendo los archivados
+    let slackChannel = await getSlackChannelFromGoogleSheets(user_id);
 
-    // Guardar la conversación en memoria
-    conversations[formattedUserId] = slackChannel;
-    chatfuelUsers[formattedUserId] = chatfuel_user_id;
-    console.log('Conversations: ', conversations);
-    console.log('Chatfuel Users: ', chatfuelUsers);
+    if (!slackChannel) {
+      // Crear un canal en Slack para el usuario
+      slackChannel = await createSlackChannel(user_id);
+      await sendToGoogleSheets(user_id, slackChannel, chatfuel_user_id);
+    }
+    
+    console.log('slackChannel: ', slackChannel);
 
     await sendMessageToSlack(slackChannel, user_message);
 
@@ -218,10 +219,6 @@ app.post('/activate', async (req, res) => {
 // Función para crear un canal en Slack
 async function createSlackChannel(userId) {
   const channelName = `user${userId}`;
-  // const channelId = conversations[channelName];
-  // console.log('channelId to archive: ', channelId);
-  // await archiveSlackChannel(channelId);
-
   const slackToken = process.env.SLACK_API_BOT_TOKEN;
   const slackUrl = 'https://slack.com/api/conversations.create';
 
@@ -261,9 +258,9 @@ async function sendMessageToSlack(channel, message) {
       'Authorization': `Bearer ${slackToken}`
     }
   });
-  console.log('slack msg response: ', response.data);
+  console.log('Slack send msg response: ', response.data);
   if (!response.data) {
-    throw new Error('Error al enviar la señal a Chatfuel');
+    throw new Error('Error al enviar mensaje');
   } else {
     return response.data.ok;
   }
@@ -296,33 +293,32 @@ async function sendMessageToWhatsApp(to, message) {
   });
 }
 
-// async function findSlackChannelByName(channelName) {
-//   console.log('Channel name: ', channelName);
-//   const slackToken = process.env.SLACK_API_BOT_TOKEN;
-//   console.log(slackToken);
-//   const slackUrl = 'https://slack.com/api/conversations.list';
-  
-//   try {
-//     const response = await axios.get(slackUrl, {
-//       headers: {
-//         'Authorization': `Bearer ${slackToken}`
-//       },
-//       params: {
-//         token: slackToken
-//       }
-//     });
+async function findSlackChannelByName(channelName) {
+  const slackToken = process.env.SLACK_API_BOT_TOKEN;
+  const slackUrl = 'https://slack.com/api/conversations.list';
 
-//     if (response.data.ok) {
-//       const channel = response.data.channels.find(ch => ch.name === channelName);
-//       return channel ? channel.id : null;
-//     } else {
-//       throw new Error(`Error al buscar el canal en Slack: ${response.data.error}`);
-//     }
-//   } catch (error) {
-//     console.error('Error al buscar el canal en Slack:', error.message);
-//     throw error; // Propaga el error para manejarlo en el caller
-//   }
-// }
+  try {
+    const response = await axios.get(slackUrl, {
+      headers: {
+        'Authorization': `Bearer ${slackToken}`
+      },
+      params: {
+        exclude_archived: true,
+        types: 'public_channel,private_channel'
+      }
+    });
+
+    if (response.data.ok) {
+      const channel = response.data.channels.find(ch => ch.name === channelName);
+      return channel ? channel.id : null;
+    } else {
+      throw new Error(`Error al buscar el canal en Slack: ${response.data.error}`);
+    }
+  } catch (error) {
+    console.error('Error al buscar el canal en Slack:', error.message);
+    throw error;
+  }
+}
 
 async function archiveSlackChannel(channelId) {
   const slackToken = process.env.SLACK_API_BOT_TOKEN;
@@ -349,3 +345,49 @@ async function archiveSlackChannel(channelId) {
     throw error; // Propaga el error para manejarlo en el caller
   }
 }
+
+async function sendToGoogleSheets(userId, slackChannel, chatfuelUserId) {
+  const makeUrl = 'https://hook.eu2.make.com/8l2rap71szpkxycvf98my956ktjv68kc';
+  try {
+    const response = await axios.post(makeUrl, {
+      user_id: userId,
+      slack_channel: slackChannel,
+      chatfuel_user_id: chatfuelUserId
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('Save data response: ', response.data);
+    if (response.data.success) {
+      console.log('Datos enviados a Google Sheets');
+    } else {
+      throw new Error('Error al enviar los datos a Google Sheets');
+    }
+  } catch (error) {
+    console.error('Error al enviar los datos a Google Sheets:', error.message);
+  }
+}
+
+const getSlackChannelFromGoogleSheets = async (user_id) => {
+  const makeUrl = `https://hook.eu2.make.com/qw1ovswl5vf1cb1hht7x9lc78rcbjjbd`;
+
+  try {
+    const response = await axios.post(makeUrl, {
+      user_id: user_id
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('GET data response: ', response.data);
+    if (response.data.exists) {
+      return response.data.slack_channel;
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error('Error al verificar el canal en Google Sheets:', error.message);
+    throw error;
+  }
+};
