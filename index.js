@@ -28,14 +28,14 @@ app.post('/send-message', async (req, res) => {
   try {
     const response = await client.messages.create({
       contentSid: 'HX9b638f2528bb6a26939ccbe2d6ccf6ca',
-      from: '+15304530886',
+      from: 'whatsapp:+17074021487',
       contentVariables: JSON.stringify({
         1: username,
         2: query,
         3: phone
       }),
       messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
-      to: '+5493564522800'
+      to: 'whatsapp:+5493564522800'
     });
 
     if (response.sid) {
@@ -285,9 +285,10 @@ async function sendSignalToChatfuel(userId) {
 // Función para enviar un mensaje a WhatsApp usando Twilio
 async function sendMessageToWhatsApp(to, message) {
   const response = await client.messages.create({
-    from: 'whatsapp:+15304530886',
+    from: 'whatsapp:+17074021487',
     body: message,
-    to: `whatsapp:+${to}`
+    to: `whatsapp:+${to}`,
+    messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1'
   });
 
   if (response.sid) {
