@@ -135,7 +135,6 @@ app.post('/live-asesor', async (req, res) => {
 
 // Ruta para recibir mensajes de WhatsApp desde Twilio
 app.post('/whatsapp-webhook', async (req, res) => {
-  console.log('Pasa acá?');
   const userMessage = req.body.message;
   const userId = req.body.from;
   const formattedUserId = "+" + userId;
@@ -181,17 +180,15 @@ app.post('/activate', async (req, res) => {
   if (event && event.type === 'message' && !event.bot_id) {
     const slackChannel = event.channel;
     const userMessage = event.text;
-    const userId = Object.keys(conversations).find(key => conversations[key] === slackChannel);
-    console.log('User ID: ', userId);
+    const whatsappNumber = getWhatsappNumberFromGoogleSheets(slackChannel);
+    console.log('whatsappNumber: ', whatsappNumber);
     console.log('Slack Channel: ', slackChannel);
+    console.log('Slack Message: ', userMessage);
     if (userMessage.trim() === '/fin') {
       console.log('Pasa en el trim del command');
       // Finalizar la conversación
-      if (userId) {
-        delete conversations[userId];
-
-        // Aquí puedes agregar el código para enviar una señal a Chatfuel para reanudar el flujo
-        await sendSignalToChatfuel(userId);
+      if (whatsappNumber) {
+        await sendSignalToChatfuel(whatsappNumber);
 
         res.status(200).send('Conversación finalizada y flujo de Chatfuel reanudado');
       } else {
@@ -199,11 +196,9 @@ app.post('/activate', async (req, res) => {
       }
     } else {
       // Continuar la conversación normal
-      if (userId) {
-        console.log('Send Wpp Msg: ', userId);
-        console.log('Send Wpp Msg content: ', userMessage);
+      if (whatsappNumber) {
         try {
-          await sendMessageToWhatsApp(userId, userMessage);
+          await sendMessageToWhatsApp(whatsappNumber, userMessage);
           res.status(200).send('Mensaje enviado a WhatsApp');
         } catch (error) {
           console.error(`Error al enviar el mensaje a WhatsApp: ${error.message}`);
@@ -289,63 +284,16 @@ async function sendSignalToChatfuel(userId) {
 
 // Función para enviar un mensaje a WhatsApp usando Twilio
 async function sendMessageToWhatsApp(to, message) {
-  await client.messages.create({
+  const response = await client.messages.create({
     from: '+15304530886',
     body: message,
-    to: `${to}`
+    to: `+${to}`
   });
-}
 
-async function findSlackChannelByName(channelName) {
-  const slackToken = process.env.SLACK_API_BOT_TOKEN;
-  const slackUrl = 'https://slack.com/api/conversations.list';
-
-  try {
-    const response = await axios.get(slackUrl, {
-      headers: {
-        'Authorization': `Bearer ${slackToken}`
-      },
-      params: {
-        exclude_archived: true,
-        types: 'public_channel,private_channel'
-      }
-    });
-
-    if (response.data.ok) {
-      const channel = response.data.channels.find(ch => ch.name === channelName);
-      return channel ? channel.id : null;
-    } else {
-      throw new Error(`Error al buscar el canal en Slack: ${response.data.error}`);
-    }
-  } catch (error) {
-    console.error('Error al buscar el canal en Slack:', error.message);
-    throw error;
-  }
-}
-
-async function archiveSlackChannel(channelId) {
-  const slackToken = process.env.SLACK_API_BOT_TOKEN;
-  const slackUrl = 'https://slack.com/api/conversations.archive';
-
-  try {
-    const response = await axios.post(slackUrl, {
-      channel: channelId,
-      token: slackToken
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${slackToken}`
-      }
-    });
-    console.log('Archive response: ', response.data);
-    if (!response.data.ok) {
-      throw new Error(`Error al archivar el canal en Slack: ${response.data.error}`);
-    } else {
-      return response.data.ok;
-    }
-  } catch (error) {
-    console.error('Error al archivar el canal en Slack:', error.message);
-    throw error; // Propaga el error para manejarlo en el caller
+  if (response.sid) {
+    return `Mensaje enviado exitosamente a: ${to}`;
+  } else {
+    return "Error al enviar mensaje por Whatsapp";
   }
 }
 
@@ -384,6 +332,29 @@ const getSlackChannelFromGoogleSheets = async (user_id) => {
       }
     });
     console.log('GET data response: ', response.data);
+    if (response.data !== '') {
+      return response.data;
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error('Error al verificar el canal en Google Sheets:', error.message);
+    throw error;
+  }
+};
+
+const getWhatsappNumberFromGoogleSheets = async (channel_id) => {
+  const makeUrl = `https://hook.eu2.make.com/81u3o5pew7nffvonb3j9pkhfnfocwp9u`;
+
+  try {
+    const response = await axios.post(makeUrl, {
+      channel_id: channel_id
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('GET wpp number data response: ', response.data);
     if (response.data !== '') {
       return response.data;
     } else {
