@@ -180,7 +180,7 @@ app.post('/activate', async (req, res) => {
   if (event && event.type === 'message' && !event.bot_id) {
     const slackChannel = event.channel;
     const userMessage = event.text;
-    const whatsappNumber = getWhatsappNumberFromGoogleSheets(slackChannel);
+    const whatsappNumber = await getWhatsappNumberFromGoogleSheets(slackChannel);
     console.log('whatsappNumber: ', whatsappNumber);
     console.log('Slack Channel: ', slackChannel);
     console.log('Slack Message: ', userMessage);
