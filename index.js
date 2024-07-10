@@ -381,7 +381,7 @@ const getSlackChannelFromGoogleSheets = async (user_id) => {
       }
     });
     console.log('GET data response: ', response.data);
-    if (response.data.exists) {
+    if (response.data.slack_channel != '') {
       return response.data.slack_channel;
     } else {
       return null;
