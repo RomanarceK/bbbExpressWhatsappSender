@@ -109,9 +109,7 @@ app.post('/live-asesor', async (req, res) => {
     let slackChannel = await getSlackChannelFromGoogleSheets(user_id);
     console.log('Slack Channel response: ', slackChannel);
 
-    if (slackChannel !== '' && slackChannel !== undefined) {
-      console.log("Pasa erróneamente");
-      console.log('Condition response: ', slackChannel !== '');
+    if (slackChannel === '' || slackChannel === undefined) {
       // Crear un canal en Slack para el usuario
       slackChannel = await createSlackChannel(user_id);
       await sendToGoogleSheets(user_id, slackChannel, chatfuel_user_id);
