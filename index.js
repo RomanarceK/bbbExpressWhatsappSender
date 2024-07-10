@@ -287,7 +287,7 @@ async function sendMessageToWhatsApp(to, message) {
   const response = await client.messages.create({
     from: '+15304530886',
     body: message,
-    to: `+${to}`
+    to: `whatsapp:+${to}`
   });
 
   if (response.sid) {
