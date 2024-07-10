@@ -285,7 +285,7 @@ async function sendSignalToChatfuel(userId) {
 // Función para enviar un mensaje a WhatsApp usando Twilio
 async function sendMessageToWhatsApp(to, message) {
   const response = await client.messages.create({
-    from: '+15304530886',
+    from: 'whatsapp:+15304530886',
     body: message,
     to: `whatsapp:+${to}`
   });
