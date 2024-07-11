@@ -379,10 +379,7 @@ async function sendWhatsAppTemplateMessage(to) {
     const response = await client.messages.create({
       from: from,
       to: `whatsapp:+${to}`,
-      contentSid: 'HX3e96a2927835cbb7a31f28648fa87542',
-      contentVariables: JSON.stringify({
-        1:"Estudio Giletta"
-      }),
+      contentSid: 'HXf8ce9f32eef174eb3a244f9b64c8fc73',
       messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1'
     });
 
