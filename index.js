@@ -136,7 +136,8 @@ app.post('/live-asesor', async (req, res) => {
 app.post('/whatsapp-webhook', async (req, res) => {
   console.log('Twilio event body: ', req.body);
   const userMessage = req.body.Body;
-  const userId = req.body.From;
+  const userId = req.body.From.replace('whatsapp:+', '').trim();
+  console.log('UserId Wpp webhook: ', userId);
 
   try {
     // Recuperar el canal de Slack correspondiente
