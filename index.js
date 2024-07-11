@@ -132,9 +132,6 @@ app.post('/whatsapp-webhook', async (req, res) => {
   try {
     // Recuperar el canal de Slack correspondiente
     let slackChannel = await getSlackChannelFromGoogleSheets(userId);
-    const forceSendTemplate = !slackChannel;
-
-    await sendWhatsAppTemplateMessage(userId, forceSendTemplate);
 
     if (slackChannel === '' || slackChannel === undefined) {
       const chatfuelUserId = await getChatfuelUserIdFromGoogleSheets(userId);
