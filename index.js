@@ -172,7 +172,8 @@ app.post('/activate', async (req, res) => {
     const whatsappNumber = await getWhatsappNumberFromGoogleSheets(slackChannel);
     await sendWhatsAppTemplateMessage(whatsappNumber);
 
-    if (userMessage.trim() === '/fin') {
+    if (userMessage.trim() === 'consulta_finalizada') {
+      console.log('Flujo de finalizar conversación');
       // Finalizar la conversación
       if (whatsappNumber) {
         await sendSignalToChatfuel(whatsappNumber);
@@ -261,6 +262,8 @@ async function sendSignalToChatfuel(userId) {
       chatfuel_token: apiKey,
       chatfuel_block_name: 'Flow'
     });
+
+    console.log('Chatfuel signal response: ', response.data);
 
     if (response.data.result === 'success') {
       console.log('Conversación en vivo cerrada y usuario redirigido al flujo principal en Chatfuel');
