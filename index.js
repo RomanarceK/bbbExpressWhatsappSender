@@ -380,11 +380,11 @@ async function sendWhatsAppTemplateMessage(to) {
     const response = await client.messages.create({
       from: from,
       to: `whatsapp:+${to}`,
-      body: '¡Hola! Veo que solicitaste contacto mediante nuestro asistente. Responda este mensaje para iniciar la conversación. ¿En qué puedo ayudarte?',
+      contentSid: 'HXf8ce9f32eef174eb3a244f9b64c8fc73',
       messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1'
     });
 
-    console.log(response.data);
+    console.log('Template send response: ', response);
     return;
   } catch (error) {
     console.error(`Error al enviar el mensaje de plantilla a WhatsApp: ${error.message}`);
