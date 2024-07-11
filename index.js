@@ -9,13 +9,9 @@ const axios = require('axios');
 const app = express();
 const port = 3001;
 
-app.listen(port, () => {
-  console.log(`Server listening on port: ${port}`);
-});
-
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(bodyParser.raw({ type: '*/*' }));
-app.use(bodyParser.urlencoded({ extended: true }));
 
 const conversations = {};
 const chatfuelUsers = {};
@@ -478,3 +474,7 @@ async function inviteUserToSlackChannel(channelId, userId) {
     throw error;
   }
 }
+
+app.listen(port, () => {
+  console.log(`Server listening on port: ${port}`);
+});
