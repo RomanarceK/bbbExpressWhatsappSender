@@ -185,6 +185,7 @@ app.post('/activate', async (req, res) => {
     const slackChannel = event.channel;
     const userMessage = event.text;
     const whatsappNumber = await getWhatsappNumberFromGoogleSheets(slackChannel);
+    await sendWhatsAppTemplateMessage(whatsappNumber);
     console.log('whatsappNumber: ', whatsappNumber);
     console.log('Slack Channel: ', slackChannel);
     console.log('Slack Message: ', userMessage);
@@ -379,7 +380,7 @@ async function sendWhatsAppTemplateMessage(to) {
     const response = await client.messages.create({
       from: from,
       to: `whatsapp:+${to}`,
-      contentSid: 'HXf8ce9f32eef174eb3a244f9b64c8fc73',
+      body: '¡Hola! Veo que solicitaste contacto mediante nuestro asistente. Responda este mensaje para iniciar la conversación. ¿En qué puedo ayudarte?',
       messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1'
     });
 
