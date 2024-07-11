@@ -15,6 +15,7 @@ app.listen(port, () => {
 
 app.use(express.json());
 app.use(bodyParser.raw({ type: '*/*' }));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 const conversations = {};
 const chatfuelUsers = {};
@@ -138,9 +139,8 @@ app.post('/live-asesor', async (req, res) => {
 // Ruta para recibir mensajes de WhatsApp en Slack
 app.post('/whatsapp-webhook', async (req, res) => {
   console.log('Twilio event body: ', req.body);
-  console.log('Twilio event: ', req);
-  const userMessage = req.body.message;
-  const userId = req.body.from;
+  const userMessage = req.body.Body;
+  const userId = req.body.From;
 
   try {
     // Recuperar el canal de Slack correspondiente
