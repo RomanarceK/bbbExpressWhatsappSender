@@ -139,7 +139,6 @@ app.post('/live-asesor', async (req, res) => {
 app.post('/whatsapp-webhook', async (req, res) => {
   console.log('Twilio event body: ', req.body);
   console.log('Twilio event: ', req);
-  return;
   const userMessage = req.body.message;
   const userId = req.body.from;
 
@@ -418,13 +417,21 @@ async function saveLastWhatsappTemplateSent(userId, slackChannel, chatfuelUserId
 // Función para enviar un mensaje de plantilla a WhatsApp usando Twilio
 async function sendWhatsAppTemplateMessage(to, forceSend = false) {
   const from = 'whatsapp:+17074021487';
+  console.log('Wpp template sender forceSend value: ', forceSend);
 
   if (!forceSend) {
     // Verifica si ya se envió un template en las últimas 24 horas
     const lastTemplateSent = await checkLastWhatsappTemplateSent(to);
-    if (lastTemplateSent && Date.now() - lastTemplateSent < 24 * 60 * 60 * 1000) { // 24 horas
-      console.log('Template ya enviado en las últimas 24 horas');
-      return;
+    console.log('Get lastTemplateSent response: ', lastTemplateSent);
+    if (lastTemplateSent) {
+      const lastSentDate = new Date(lastTemplateSent);
+      const now = new Date();
+      const timeDifference = now - lastSentDate; // Diferencia en milisegundos
+
+      if (timeDifference < (24 * 60 * 60 * 1000)) { // 24 horas
+        console.log('Template ya enviado en las últimas 24 horas');
+        return;
+      }
     }
   }
 
