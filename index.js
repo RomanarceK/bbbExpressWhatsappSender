@@ -13,9 +13,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(bodyParser.raw({ type: '*/*' }));
 
-const conversations = {};
-const chatfuelUsers = {};
-
 app.post('/send-message', async (req, res) => {
   const userData = req.body;
   const username = userData.username;
@@ -98,14 +95,11 @@ app.post('/crear-pedido', (req, res) => {
 // Nueva ruta para iniciar una conversación en Slack cuando se solicita un asesor
 app.post('/live-asesor', async (req, res) => {
   const { user_id, user_message, chatfuel_user_id } = req.body;
-  const formattedUserId = "+" + user_id;
   const slackUserId = process.env.SLACK_ASESOR_ID;
-  console.log('Chatfuel formatted userId: ', formattedUserId);
 
   try {
     // Verificar si el canal ya existe, excluyendo los archivados
     let slackChannel = await getSlackChannelFromGoogleSheets(user_id);
-    console.log('Slack Channel response: ', slackChannel);
 
     if (slackChannel === '' || slackChannel === undefined) {
       // Crear un canal en Slack para el usuario
@@ -113,8 +107,6 @@ app.post('/live-asesor', async (req, res) => {
       await inviteUserToSlackChannel(slackChannel, slackUserId);
       await sendToGoogleSheets(user_id, slackChannel, chatfuel_user_id);
     }
-    
-    console.log('slackChannel: ', slackChannel);
 
     await sendMessageToSlack(slackChannel, user_message);
 
@@ -134,23 +126,20 @@ app.post('/live-asesor', async (req, res) => {
 
 // Ruta para recibir mensajes de WhatsApp en Slack
 app.post('/whatsapp-webhook', async (req, res) => {
-  console.log('Twilio event body: ', req.body);
   const userMessage = req.body.Body;
   const userId = req.body.From.replace('whatsapp:+', '').trim();
-  console.log('UserId Wpp webhook: ', userId);
 
   try {
     // Recuperar el canal de Slack correspondiente
     let slackChannel = await getSlackChannelFromGoogleSheets(userId);
     const forceSendTemplate = !slackChannel;
-    console.log('forceSendTemplate: ', forceSendTemplate);
 
     await sendWhatsAppTemplateMessage(userId, forceSendTemplate);
 
     if (slackChannel === '' || slackChannel === undefined) {
-      // Crear un canal en Slack para el usuario
-      slackChannel = await createSlackChannel(userId);
-      await sendToGoogleSheets(userId, slackChannel, userId);
+      const chatfuelUserId = await getChatfuelUserIdFromGoogleSheets(userId);
+      const slackChannel = await createSlackChannel(userId);
+      await sendToGoogleSheets(userId, slackChannel, chatfuelUserId);
 
       const slackUserId = process.env.SLACK_ASESOR_ID;
       await inviteUserToSlackChannel(slackChannel, slackUserId);
@@ -179,17 +168,14 @@ app.post('/activate', async (req, res) => {
   if (event && event.type === 'message' && !event.bot_id) {
     const slackChannel = event.channel;
     const userMessage = event.text;
+
     const whatsappNumber = await getWhatsappNumberFromGoogleSheets(slackChannel);
     await sendWhatsAppTemplateMessage(whatsappNumber);
-    console.log('whatsappNumber: ', whatsappNumber);
-    console.log('Slack Channel: ', slackChannel);
-    console.log('Slack Message: ', userMessage);
+
     if (userMessage.trim() === '/fin') {
-      console.log('Pasa en el trim del command');
       // Finalizar la conversación
       if (whatsappNumber) {
         await sendSignalToChatfuel(whatsappNumber);
-
         res.status(200).send('Conversación finalizada y flujo de Chatfuel reanudado');
       } else {
         res.status(404).send('Usuario no encontrado para el canal de Slack');
@@ -256,7 +242,7 @@ async function sendMessageToSlack(channel, message) {
       'Authorization': `Bearer ${slackToken}`
     }
   });
-  console.log('Slack send msg response: ', response.data);
+
   if (!response.data) {
     throw new Error('Error al enviar mensaje');
   } else {
@@ -266,19 +252,24 @@ async function sendMessageToSlack(channel, message) {
 
 // Función para enviar una señal a Chatfuel
 async function sendSignalToChatfuel(userId) {
-  const chatfuelUserId = chatfuelUsers[userId];
-  const makeUrl = `https://hook.eu2.make.com/5vn8ko3mj12wh5up1p7osnug656v0qlx`;
-  const response = await axios.post(makeUrl, {
-    block_name: 'Flow',
-    user_id: chatfuelUserId
-  }, {
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  });
+  const apiKey = process.env.CHATFUEL_API_KEY;
+  const botId = process.env.CHATFUEL_BOT_ID;
+  const chatfuelUserId = await getChatfuelUserIdFromGoogleSheets(userId);
 
-  if (!response.data.success) {
-    throw new Error('Error al enviar la señal a Chatfuel');
+  try {
+    const response = await axios.post(`https://api.chatfuel.com/bots/${botId}/users/${chatfuelUserId}/send`, {
+      chatfuel_token: apiKey,
+      chatfuel_block_name: 'Flow'
+    });
+
+    if (response.data.result === 'success') {
+      console.log('Conversación en vivo cerrada y usuario redirigido al flujo principal en Chatfuel');
+    } else {
+      throw new Error('Error al enviar la señal a Chatfuel');
+    }
+  } catch (error) {
+    console.error('Error al enviar la señal a Chatfuel:', error.message);
+    throw error; // Propaga el error para manejarlo en el caller
   }
 }
 
@@ -323,6 +314,29 @@ async function sendToGoogleSheets(userId, slackChannel, chatfuelUserId) {
 
 const getSlackChannelFromGoogleSheets = async (user_id) => {
   const makeUrl = `https://hook.eu2.make.com/qw1ovswl5vf1cb1hht7x9lc78rcbjjbd`;
+
+  try {
+    const response = await axios.post(makeUrl, {
+      user_id: user_id
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('GET data response: ', response.data);
+    if (response.data !== '') {
+      return response.data;
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error('Error al verificar el canal en Google Sheets:', error.message);
+    throw error;
+  }
+};
+
+const getChatfuelUserIdFromGoogleSheets = async (user_id) => {
+  const makeUrl = `https://hook.eu2.make.com/58jsl18wt5f8qg89vpwktuhk3wvitm3c`;
 
   try {
     const response = await axios.post(makeUrl, {
@@ -414,12 +428,10 @@ async function saveLastWhatsappTemplateSent(userId, slackChannel, chatfuelUserId
 // Función para enviar un mensaje de plantilla a WhatsApp usando Twilio
 async function sendWhatsAppTemplateMessage(to, forceSend = false) {
   const from = 'whatsapp:+17074021487';
-  console.log('Wpp template sender forceSend value: ', forceSend);
 
   if (!forceSend) {
     // Verifica si ya se envió un template en las últimas 24 horas
     const lastTemplateSent = await checkLastWhatsappTemplateSent(to);
-    console.log('Get lastTemplateSent response: ', lastTemplateSent);
     if (lastTemplateSent) {
       const lastSentDate = new Date(lastTemplateSent);
       const now = new Date();
@@ -440,7 +452,6 @@ async function sendWhatsAppTemplateMessage(to, forceSend = false) {
       messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1'
     });
 
-    console.log('Template send response: ', response);
     await saveLastWhatsappTemplateSent(to);
     return;
   } catch (error) {
