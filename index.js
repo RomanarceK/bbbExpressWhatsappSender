@@ -102,6 +102,7 @@ app.post('/crear-pedido', (req, res) => {
 app.post('/live-asesor', async (req, res) => {
   const { user_id, user_message, chatfuel_user_id } = req.body;
   const formattedUserId = "+" + user_id;
+  const slackUserId = process.env.SLACK_ASESOR_ID;
   console.log('Chatfuel formatted userId: ', formattedUserId);
 
   try {
@@ -112,6 +113,7 @@ app.post('/live-asesor', async (req, res) => {
     if (slackChannel === '' || slackChannel === undefined) {
       // Crear un canal en Slack para el usuario
       slackChannel = await createSlackChannel(user_id);
+      await inviteUserToSlackChannel(slackChannel, slackUserId);
       await sendToGoogleSheets(user_id, slackChannel, chatfuel_user_id);
     }
     
@@ -133,51 +135,48 @@ app.post('/live-asesor', async (req, res) => {
   }
 });
 
-// Ruta para recibir mensajes de WhatsApp desde Twilio
+// Ruta para recibir mensajes de WhatsApp en Slack
 app.post('/whatsapp-webhook', async (req, res) => {
+  console.log('Twilio event body: ', req.body);
+  console.log('Twilio event: ', req);
+  return;
   const userMessage = req.body.message;
   const userId = req.body.from;
-  const formattedUserId = "+" + userId;
 
   try {
     // Recuperar el canal de Slack correspondiente
     let slackChannel = await getSlackChannelFromGoogleSheets(userId);
-    await sendWhatsAppTemplateMessage(userId);
+    const forceSendTemplate = !slackChannel;
+    console.log('forceSendTemplate: ', forceSendTemplate);
+
+    await sendWhatsAppTemplateMessage(userId, forceSendTemplate);
 
     if (slackChannel === '' || slackChannel === undefined) {
-      // Crear un canal en Slack para el usuario y enviar mensaje de plantilla para iniciar conversación
+      // Crear un canal en Slack para el usuario
       slackChannel = await createSlackChannel(userId);
-      await sendWhatsAppTemplateMessage(userId);
-      await sendMessageToSlack(slackChannel, userMessage);
-      
-      res.status(200).send({
-        message: 'Mensaje recibido y enviado a Slack',
-        data: {
-          user_id: userId,
-          slack_channel: slackChannel,
-          user_message: userMessage
-        }
-      });
-    } else {
-      await sendMessageToSlack(slackChannel, userMessage);
+      await sendToGoogleSheets(userId, slackChannel, userId);
 
-      res.status(200).send({
-        message: 'Mensaje recibido y enviado a Slack',
-        data: {
-          user_id: userId,
-          slack_channel: slackChannel,
-          user_message: userMessage
-        }
-      });
+      const slackUserId = process.env.SLACK_ASESOR_ID;
+      await inviteUserToSlackChannel(slackChannel, slackUserId);
     }
+
+    await sendMessageToSlack(slackChannel, userMessage);
+
+    res.status(200).send({
+      message: 'Mensaje recibido y enviado a Slack',
+      data: {
+        user_id: userId,
+        slack_channel: slackChannel,
+        user_message: userMessage
+      }
+    });
   } catch (error) {
     console.error(`Error al recibir el mensaje de WhatsApp: ${error.message}`);
     res.status(500).send(`Error al recibir el mensaje de WhatsApp: ${error.message}`);
   }
 });
 
-
-// Slack Webhook
+// Slack Webhook - Envia los mensajes hacia Whatsapp
 app.post('/activate', async (req, res) => {
   const { event } = req.body;
 
@@ -372,9 +371,62 @@ const getWhatsappNumberFromGoogleSheets = async (channel_id) => {
   }
 };
 
+const checkLastWhatsappTemplateSent = async (user_id) => {
+  const makeUrl = `https://hook.eu2.make.com/2df36xgr738r5jcoeo81cwmhbnd6cnk2`;
+
+  try {
+    const response = await axios.post(makeUrl, {
+      user_id: user_id
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('GET last template send response: ', response.data);
+    if (response.data !== '') {
+      return response.data;
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error('Error al verificar el canal en Google Sheets:', error.message);
+    throw error;
+  }
+};
+
+async function saveLastWhatsappTemplateSent(userId, slackChannel, chatfuelUserId) {
+  const makeUrl = 'https://hook.eu2.make.com/m7ezs9rs803js411ba76bww82mefhdx7';
+  try {
+    const response = await axios.post(makeUrl, {
+      user_id: userId
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('Save data response: ', response.data);
+    if (response.data.success) {
+      console.log('Datos enviados a Google Sheets');
+    } else {
+      throw new Error('Error al enviar los datos a Google Sheets');
+    }
+  } catch (error) {
+    console.error('Error al enviar los datos a Google Sheets:', error.message);
+  }
+}
+
 // Función para enviar un mensaje de plantilla a WhatsApp usando Twilio
-async function sendWhatsAppTemplateMessage(to) {
+async function sendWhatsAppTemplateMessage(to, forceSend = false) {
   const from = 'whatsapp:+17074021487';
+
+  if (!forceSend) {
+    // Verifica si ya se envió un template en las últimas 24 horas
+    const lastTemplateSent = await checkLastWhatsappTemplateSent(to);
+    if (lastTemplateSent && Date.now() - lastTemplateSent < 24 * 60 * 60 * 1000) { // 24 horas
+      console.log('Template ya enviado en las últimas 24 horas');
+      return;
+    }
+  }
 
   try {
     const response = await client.messages.create({
@@ -385,8 +437,37 @@ async function sendWhatsAppTemplateMessage(to) {
     });
 
     console.log('Template send response: ', response);
+    await saveLastWhatsappTemplateSent(to);
     return;
   } catch (error) {
     console.error(`Error al enviar el mensaje de plantilla a WhatsApp: ${error.message}`);
+  }
+}
+
+// Función para invitar a un usuario al canal de Slack
+async function inviteUserToSlackChannel(channelId, userId) {
+  const slackToken = process.env.SLACK_API_BOT_TOKEN;
+  const slackUrl = 'https://slack.com/api/conversations.invite';
+
+  try {
+    const response = await axios.post(slackUrl, {
+      channel: channelId,
+      users: userId
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${slackToken}`
+      }
+    });
+
+    if (response.data.ok) {
+      console.log(`Usuario ${userId} invitado al canal ${channelId}`);
+      return response.data.ok;
+    } else {
+      throw new Error(`Error al invitar al usuario al canal en Slack: ${response.data.error}`);
+    }
+  } catch (error) {
+    console.error('Error al invitar al usuario al canal en Slack:', error.message);
+    throw error;
   }
 }
