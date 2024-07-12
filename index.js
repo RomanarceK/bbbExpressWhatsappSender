@@ -259,7 +259,7 @@ async function sendSignalToChatfuel(userId) {
   try {
     const response = await axios.post(url, null, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/json'
       }
     });
 
