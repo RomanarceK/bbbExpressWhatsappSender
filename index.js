@@ -257,7 +257,7 @@ async function sendSignalToChatfuel(userId) {
   try {
     const response = await axios.post(`https://api.chatfuel.com/bots/${botId}/users/${chatfuelUserId}/send`, {
       chatfuel_token: apiKey,
-      chatfuel_block_name: 'Flow'
+      chatfuel_flow_name: 'Flow'
     });
 
     console.log('Chatfuel signal response: ', response.data);
