@@ -272,7 +272,7 @@ async function sendSignalToChatfuel(userId) {
 
     console.log('Chatfuel signal response: ', response.data);
 
-    if (response.data.result === 'success') {
+    if (response.data.result === 'ok') {
       console.log('Conversación en vivo cerrada y usuario redirigido al flujo principal en Chatfuel');
     } else {
       throw new Error('Error al enviar la señal a Chatfuel');
