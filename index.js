@@ -257,7 +257,11 @@ async function sendSignalToChatfuel(userId) {
   const url = `https://api.chatfuel.com/bots/${botId}/users/${chatfuelUserId}/send?chatfuel_token=${apiKey}&chatfuel_flow_name=Flow`;
 
   try {
-    const response = await axios.post(url);
+    const response = await axios.post(url, null, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
 
     console.log('Chatfuel signal response: ', response.data);
 
