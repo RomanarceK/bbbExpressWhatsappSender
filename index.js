@@ -94,6 +94,7 @@ app.post('/crear-pedido', (req, res) => {
 
 // Nueva ruta para iniciar una conversación en Slack cuando se solicita un asesor
 app.post('/live-asesor', async (req, res) => {
+  console.log('Inicia sesión en vivo...');
   const { user_id, user_message, chatfuel_user_id } = req.body;
   const slackUserId = process.env.SLACK_ASESOR_ID;
 
@@ -102,6 +103,7 @@ app.post('/live-asesor', async (req, res) => {
     let slackChannel = await getSlackChannelFromGoogleSheets(user_id);
 
     if (slackChannel === '' || slackChannel === undefined) {
+      console.log('Slack channel not found. Creating a new one...');
       // Crear un canal en Slack para el usuario
       slackChannel = await createSlackChannel(user_id);
       await inviteUserToSlackChannel(slackChannel, slackUserId);
@@ -126,6 +128,7 @@ app.post('/live-asesor', async (req, res) => {
 
 // Ruta para recibir mensajes de WhatsApp en Slack
 app.post('/whatsapp-webhook', async (req, res) => {
+  console.log('Nuevo mensaje de Whatsapp!');
   const userMessage = req.body.Body;
   const userId = req.body.From.replace('whatsapp:+', '').trim();
 
@@ -134,6 +137,7 @@ app.post('/whatsapp-webhook', async (req, res) => {
     let slackChannel = await getSlackChannelFromGoogleSheets(userId);
 
     if (slackChannel === '' || slackChannel === undefined) {
+      console.log('Slack channel not found. Creating a new one from wpp webhook...');
       const chatfuelUserId = await getChatfuelUserIdFromGoogleSheets(userId);
       const slackChannel = await createSlackChannel(userId);
       await sendToGoogleSheets(userId, slackChannel, chatfuelUserId);
@@ -160,18 +164,19 @@ app.post('/whatsapp-webhook', async (req, res) => {
 
 // Slack Webhook - Envia los mensajes hacia Whatsapp
 app.post('/activate', async (req, res) => {
+  console.log('Nuevo mensaje recibido desde Slack!');
   const { event } = req.body;
+  console.log('Conenido del evento de Slack: ', event);
 
   if (event && event.type === 'message' && !event.bot_id) {
     const slackChannel = event.channel;
     const userMessage = event.text;
-    console.log('userMessage: ', userMessage);
 
     const whatsappNumber = await getWhatsappNumberFromGoogleSheets(slackChannel);
     await sendWhatsAppTemplateMessage(whatsappNumber);
 
     if (userMessage.trim() === 'consulta_finalizada') {
-      console.log('Flujo de finalizar conversación');
+      console.log('Flujo de finalizar conversación: ', userMessage.trim());
       // Finalizar la conversación
       if (whatsappNumber) {
         await sendSignalToChatfuel(whatsappNumber);
@@ -216,6 +221,7 @@ async function createSlackChannel(userId) {
     });
 
     if (response.data.ok) {
+      console.log('Canal de slack creado!');
       return response.data.channel.id;
     } else {
       throw new Error(`Error al crear el canal en Slack: ${response.data.error}`);
@@ -305,7 +311,7 @@ async function sendToGoogleSheets(userId, slackChannel, chatfuelUserId) {
         'Content-Type': 'application/json'
       }
     });
-    console.log('Save data response: ', response.data);
+
     if (response.data.success) {
       console.log('Datos enviados a Google Sheets');
     } else {
@@ -327,7 +333,7 @@ const getSlackChannelFromGoogleSheets = async (user_id) => {
         'Content-Type': 'application/json'
       }
     });
-    console.log('GET data response: ', response.data);
+    console.log('GET slack channel response: ', response.data);
     if (response.data !== '') {
       return response.data;
     } else {
@@ -350,7 +356,7 @@ const getChatfuelUserIdFromGoogleSheets = async (user_id) => {
         'Content-Type': 'application/json'
       }
     });
-    console.log('GET data response: ', response.data);
+    console.log('GET Chatfuel user id response: ', response.data);
     if (response.data !== '') {
       return response.data;
     } else {
@@ -418,7 +424,7 @@ async function saveLastWhatsappTemplateSent(userId, slackChannel, chatfuelUserId
         'Content-Type': 'application/json'
       }
     });
-    console.log('Save data response: ', response.data);
+    console.log('Save last template send response: ', response.data);
     if (response.data.success) {
       console.log('Datos enviados a Google Sheets');
     } else {
@@ -431,6 +437,7 @@ async function saveLastWhatsappTemplateSent(userId, slackChannel, chatfuelUserId
 
 // Función para enviar un mensaje de plantilla a WhatsApp usando Twilio
 async function sendWhatsAppTemplateMessage(to, forceSend = false) {
+  console.log('Enviando plantilla de Whatsapp...');
   const from = 'whatsapp:+17074021487';
 
   if (!forceSend) {
