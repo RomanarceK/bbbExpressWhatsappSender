@@ -254,13 +254,10 @@ async function sendSignalToChatfuel(userId) {
   const botId = process.env.CHATFUEL_BOT_ID;
   const chatfuelUserId = await getChatfuelUserIdFromGoogleSheets(userId);
 
+  const url = `https://api.chatfuel.com/bots/${botId}/users/${chatfuelUserId}/send?chatfuel_token=${apiKey}&chatfuel_flow_name=${flowName}`;
+
   try {
-    const response = await axios.post(`https://api.chatfuel.com/bots/${botId}/users/${chatfuelUserId}/send`, null, {
-      params: {
-        chatfuel_token: apiKey,
-        chatfuel_flow_name: 'Flow'
-      }
-    });
+    const response = await axios.post(url);
 
     console.log('Chatfuel signal response: ', response.data);
 
