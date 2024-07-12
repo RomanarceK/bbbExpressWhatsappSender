@@ -203,6 +203,22 @@ app.post('/activate', async (req, res) => {
   }
 });
 
+app.post('/parse-json-response', (req, res) => {
+  try {
+    const jsonBody = JSON.parse(req.query.data);
+    console.log('Body: ', jsonBody);
+    
+    let responseString = jsonBody.map((item, index) => {
+      return `${index + 1}). Tipo de propiedad: ${item['0']}, Dirección: ${item['1']}, Dormitorios: ${item['2']}, Garage: ${item['3']}, Servicios: ${item['4']}, Mascotas: ${item['5']}`;
+    }).join('\n');
+
+    res.status(200).send(responseString);
+  } catch (error) {
+    console.error('Error al parsear JSON: ', error);
+    res.status(400).send('Error al parsear JSON');
+  }
+});
+
 // Función para crear un canal en Slack
 async function createSlackChannel(userId) {
   const channelName = `user${userId}`;
