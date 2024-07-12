@@ -102,7 +102,7 @@ app.post('/live-asesor', async (req, res) => {
     // Verificar si el canal ya existe, excluyendo los archivados
     let slackChannel = await getSlackChannelFromGoogleSheets(user_id);
 
-    if (slackChannel === '' || slackChannel === undefined) {
+    if (slackChannel === '' || slackChannel === undefined || slackChannel === 'Accepted') {
       console.log('Slack channel not found. Creating a new one...');
       // Crear un canal en Slack para el usuario
       slackChannel = await createSlackChannel(user_id);
