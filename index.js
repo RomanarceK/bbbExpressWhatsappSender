@@ -165,8 +165,22 @@ app.post('/whatsapp-webhook', async (req, res) => {
 // Slack Webhook - Envia los mensajes hacia Whatsapp
 app.post('/activate', async (req, res) => {
   console.log('Nuevo mensaje recibido desde Slack!');
-  const { event } = req.body;
+  const { event, event_id } = req.body;
   console.log('Conenido del evento de Slack: ', event);
+  console.log('Event id: ', event_id);
+
+  const slackEvents = await getSlackEvents();
+  console.log('SlackEvents: ', slackEvents);
+  const processedEventIds = new Set(slackEvents.map(event => event["0"]));
+  console.log('Processed SlackEvents: ', processedEventIds);
+  console.log('Event condition response: ', processedEventIds.has(event_id));
+
+  if (!event_id || processedEventIds.has(event_id)) {
+    console.log('Evento duplicado o sin ID', event_id);
+    return res.status(200).send('Evento duplicado o sin ID');
+  }
+
+  await saveSlackEvent(event_id);
 
   if (event && event.type === 'message' && !event.bot_id) {
     const slackChannel = event.channel;
@@ -514,6 +528,48 @@ async function inviteUserToSlackChannel(channelId, userId) {
     throw error;
   }
 }
+
+async function saveSlackEvent(event_id) {
+  const makeUrl = 'https://hook.eu2.make.com/qx0t09gmf5x70d0146k52lf5agurjfg3';
+  try {
+    const response = await axios.post(makeUrl, {
+      event_id: event_id
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.data !== '') {
+      console.log('Evento guardado en Google Sheets', response.data);
+    } else {
+      throw new Error('Error al enviar los datos a Google Sheets');
+    }
+  } catch (error) {
+    console.error('Error al enviar los datos a Google Sheets:', error.message);
+  }
+}
+
+const getSlackEvents = async (user_id) => {
+  const makeUrl = `https://hook.eu2.make.com/3849vkotn8e1qmrb1qgiljldttwv94gc`;
+
+  try {
+    const response = await axios.post(makeUrl, {}, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('GET slack events response: ', response.data);
+    if (response.data !== '') {
+      return response.data;
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error('Error al verificar el canal en Google Sheets:', error.message);
+    throw error;
+  }
+};
 
 app.listen(port, () => {
   console.log(`Server listening on port: ${port}`);
