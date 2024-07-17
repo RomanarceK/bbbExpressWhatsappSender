@@ -21,7 +21,7 @@ app.post('/send-message', async (req, res) => {
 
   try {
     const response = await client.messages.create({
-      contentSid: 'HX9b638f2528bb6a26939ccbe2d6ccf6ca',
+      contentSid: 'HXe770ab72fee7a451774df96ff86093a4',
       from: 'whatsapp:+17074021487',
       contentVariables: JSON.stringify({
         1: username,
