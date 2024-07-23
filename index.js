@@ -222,16 +222,15 @@ app.post('/parse-json-response', (req, res) => {
     const jsonBody = JSON.parse(req.query.data);
     
     let responseString = jsonBody.map((item, index) => {
-      return `
-        ${index + 1}). Tipo de propiedad: ${item['0']}, 
-        Dirección: ${item['1'] ? item['1'] : ''}, 
-        Dormitorios: ${item['2'] ? item['2'] : ''}, 
-        Garage: ${item['3'] ? item['3'] : ''}, 
-        Servicios: ${item['4'] ? item['4'] : ''}, 
-        Mascotas: ${item['5'] ? item['5'] : ''}, 
-        Precio: ${item['7'] ? item['7'] : ''},
-        Link: ${item['8'] ? item['8'] : 'No tiene'}
-      `;
+      return `${index + 1}). Tipo de propiedad: ${item['0']}, 
+  Dirección: ${item['1'] ? item['1'] : ''}, 
+  Dormitorios: ${item['2'] ? item['2'] : ''}, 
+  Garage: ${item['3'] ? item['3'] : ''}, 
+  Servicios: ${item['4'] ? item['4'] : ''}, 
+  Mascotas: ${item['5'] ? item['5'] : ''}, 
+  Precio: ${item['7'] ? item['7'] : ''},
+  Link: ${item['8'] ? item['8'] : 'No tiene'}
+  `;
     }).join('\n');
 
     res.status(200).send(responseString);
