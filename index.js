@@ -57,16 +57,8 @@ app.post('/nuevo-pedido', async (req, res) => {
   const localidad = userData.localidad;
   const provincia = userData.provincia;
 
-  const query = `Datos del pedido: 
-    Sucursal: ${sucursal}. 
-    Razón social: ${razonSocial}. 
-    Cantidad de bultos: ${bultos}.
-    Tipo de carga: ${detalleBultos}.
-    Domicilio: ${domicilio}.
-    Localidad: ${localidad}.
-    Provincia: ${provincia}.
-  `;
-
+  const query = `Datos del pedido: Sucursal: ${sucursal}. Razón social: ${razonSocial}. Cantidad de bultos: ${bultos}. Tipo de carga: ${detalleBultos}. Domicilio: ${domicilio}. Localidad: ${localidad}. Provincia: ${provincia}.`;
+  console.log('Query nuevo pedido: ', query);
   try {
     const response = await client.messages.create({
       contentSid: 'HX0862f418ac9221b387dfbb889ed77bb9',
