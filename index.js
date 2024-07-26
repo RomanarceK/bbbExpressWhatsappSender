@@ -45,6 +45,54 @@ app.post('/send-message', async (req, res) => {
   }
 });
 
+app.post('/nuevo-pedido', async (req, res) => {
+  const userData = req.body;
+  const username = userData.username;
+  const phone = userData.phone;
+  const sucursal = userData.sucursal;
+  const razonSocial = userData.razonSocial;
+  const bultos = userData.bultos;
+  const detalleBultos = userData.detalleBultos;
+  const domicilio = userData.domicilio;
+  const localidad = userData.localidad;
+  const provincia = userData.provincia;
+
+  const query = `Datos del pedido: 
+    Sucursal: ${sucursal}. 
+    Razón social: ${razonSocial}. 
+    Cantidad de bultos: ${bultos}.
+    Tipo de carga: ${detalleBultos}.
+    Domicilio: ${domicilio}.
+    Localidad: ${localidad}.
+    Provincia: ${provincia}.
+  `;
+
+  try {
+    const response = await client.messages.create({
+      contentSid: 'HX0862f418ac9221b387dfbb889ed77bb9',
+      from: 'whatsapp:+17074021487',
+      contentVariables: JSON.stringify({
+        1: username,
+        2: query,
+        3: phone
+      }),
+      messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
+      to: 'whatsapp:+5493564522800'
+    });
+
+    if (response.sid) {
+      console.log(`Mensaje sobre nuevo pedido enviado a WhatsApp: ${phone}`);
+      res.status(200).send(`Mensaje sobre nuevo pedido enviado exitosamente a: ${phone}`);
+    } else {
+      console.error('Error al enviar mensaje sobre nuevo pedido, respuesta sin SID.');
+      res.status(500).send('Error al enviar mensaje sobre nuevo pedido');
+    }
+  } catch (error) {
+    console.error(`Error al enviar mensaje sobre nuevo pedido: ${error.message}`);
+    res.status(500).send(`Error al enviar mensaje sobre nuevo pedido: ${error.message}`);
+  }
+});
+
 app.post('/consultar-envio', async (req, res) => {
   try {
     const rawBody = req.query.xml;
