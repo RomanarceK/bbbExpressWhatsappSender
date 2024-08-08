@@ -5,6 +5,7 @@ const moment = require('moment');
 require("dotenv").config();
 const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const axios = require('axios');
+const  { OpenAI } = require('openai');
 
 const app = express();
 const port = 3001;
@@ -277,6 +278,49 @@ app.post('/parse-json-response', (req, res) => {
   } catch (error) {
     console.error('Error al parsear JSON: ', error);
     res.status(400).send('Error al parsear JSON');
+  }
+});
+
+app.post('/ask', async (req, res) => {
+  try {
+    const openaiKey = process.env.OPENAI_KEY;
+    const question = req.headers.question;
+
+    if (!question) {
+      return res.status(400).json({ success: false, error: 'La pregunta es requerida' });
+    }
+
+    const openai = new OpenAI(
+      {
+        apiKey: openaiKey,
+        project: 'proj_Ncjj2if2gtsMh09ypLCLJn1n',
+        organization: 'org-5bhCPYUobXKz9DMRqiLFL5ss'
+      }
+    );
+
+    console.log(question);
+
+    const completion = await openai.chat.completions.create({
+      messages: [
+        {
+            role: 'system',
+            content: 'Eres un asistente comercial inteligente de Setil viajes. Tu objetivo es responder a las consultas de los usuarios de manera cordial y amable. Utiliza lenguaje descontracturado, muestrate cercano y amigable. Intenta resolver todas las consultas posibles, Si no tienes información para responder la pregunta, recomienda comunicarse con un asesor y brinda los datos de contacto correspondientes.',
+        },
+        {
+          role: 'user',
+          content: question
+        }
+      ],
+      temperature: 0.8,
+      max_tokens: 1024,
+      model: 'ft:gpt-4o-mini-2024-07-18:personal:setil-viajes:9tjro13F'
+    });
+
+    const answer = completion.choices[0].message.content.trim();
+    res.status(200).json({ success: true, data: answer });
+  } catch (error) {
+    console.error('Error al procesar con ChatGPT:', error);
+    res.status(500).json({ success: false, error: 'Error al procesar con ChatGPT' });
   }
 });
 
