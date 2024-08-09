@@ -6,6 +6,7 @@ require("dotenv").config();
 const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const axios = require('axios');
 const  { OpenAI } = require('openai');
+let conversationHistory = [];
 
 const app = express();
 const port = 3001;
@@ -285,44 +286,75 @@ app.post('/ask', async (req, res) => {
   try {
     const openaiKey = process.env.OPENAI_KEY;
     const question = req.headers.question;
+    const userId = req.headers.userid;
 
-    if (!question) {
-      return res.status(400).json({ success: false, error: 'La pregunta es requerida' });
+    if (!question || !userId) {
+      return res.status(400).json({ success: false, error: 'La pregunta y el userId son requeridos' });
     }
 
-    const openai = new OpenAI(
-      {
-        apiKey: openaiKey,
-        project: 'proj_Ncjj2if2gtsMh09ypLCLJn1n',
-        organization: 'org-5bhCPYUobXKz9DMRqiLFL5ss'
-      }
-    );
+    if (!conversationHistory[userId]) {
+      conversationHistory[userId] = [];
+    }
 
-    console.log(question);
+    conversationHistory[userId].push({ role: 'user', content: question });
+
+    if (conversationHistory[userId].length > 20) {
+      conversationHistory[userId] = conversationHistory[userId].slice(-20);
+    }
+
+    const openai = new OpenAI({
+      apiKey: openaiKey,
+      project: 'proj_Ncjj2if2gtsMh09ypLCLJn1n',
+      organization: 'org-5bhCPYUobXKz9DMRqiLFL5ss'
+    });
+
+    const messages = [
+      {
+        role: 'system',
+        content: 'Eres un asistente comercial inteligente de la agencia de turismo Setil viajes. Tu objetivo es responder las consultas de los usuarios de manera cordial y amable. Utiliza lenguaje descontracturado, muestrate cercano y amigable. Intenta resolver todas las consultas posibles, Si no tienes información para responder la pregunta, recomienda comunicarse con un asesor y brinda los datos de contacto correspondientes.',
+      },
+      ...conversationHistory[userId]
+    ];
 
     const completion = await openai.chat.completions.create({
-      messages: [
-        {
-            role: 'system',
-            content: 'Eres un asistente comercial inteligente de Setil viajes. Tu objetivo es responder a las consultas de los usuarios de manera cordial y amable. Utiliza lenguaje descontracturado, muestrate cercano y amigable. Intenta resolver todas las consultas posibles, Si no tienes información para responder la pregunta, recomienda comunicarse con un asesor y brinda los datos de contacto correspondientes.',
-        },
-        {
-          role: 'user',
-          content: question
-        }
-      ],
+      messages: messages,
       temperature: 0.8,
       max_tokens: 1024,
-      model: 'ft:gpt-4o-mini-2024-07-18:personal:setil-viajes:9tjro13F'
+      model: 'ft:gpt-4o-mini-2024-07-18:personal:setil-viajes-v4:9uD5DQTE'
     });
 
     const answer = completion.choices[0].message.content.trim();
+    conversationHistory[userId].push({ role: 'assistant', content: answer });
+    
+    // await saveConversation(userId, conversationHistory[userId]);
     res.status(200).json({ success: true, data: answer });
   } catch (error) {
     console.error('Error al procesar con ChatGPT:', error);
     res.status(500).json({ success: false, error: 'Error al procesar con ChatGPT' });
   }
 });
+
+async function saveConversation(userId, conversation) {
+  const makeUrl = 'https://hook.eu2.make.com/8l2rap71szpkxycvf98my956ktjv68kc';
+  try {
+    const response = await axios.post(makeUrl, {
+      user_id: userId,
+      conversation: JSON.stringify(conversation)
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.data.success) {
+      console.log('Mensaje guardado en Google Sheets');
+    } else {
+      throw new Error('Error al enviar los datos a Google Sheets');
+    }
+  } catch (error) {
+    console.error('Error al enviar los datos a Google Sheets: ', error.message);
+  }
+}
 
 // Función para crear un canal en Slack
 async function createSlackChannel(userId) {
