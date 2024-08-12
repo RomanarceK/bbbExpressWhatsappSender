@@ -294,7 +294,7 @@ app.post('/ask', async (req, res) => {
 
     let conversationHistory = await getConversation(userId);
     console.log('1: ', conversationHistory);
-    if (!conversationHistory) {
+    if (!conversationHistory || conversationHistory == "Accepted") {
       conversationHistory = [];
     }
     console.log('2: ', conversationHistory);
@@ -372,7 +372,7 @@ async function getConversation(userId) {
         'Content-Type': 'application/json'
       }
     });
-
+    console.log('Conversation response: ', response);
     if (response.data) {
       return response.data;
     } else {
