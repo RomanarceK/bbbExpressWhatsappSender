@@ -293,11 +293,11 @@ app.post('/ask', async (req, res) => {
     }
 
     let conversationHistory = await getConversation(userId);
-    console.log('1: ', conversationHistory);
+
     if (!conversationHistory || conversationHistory == "Accepted") {
       conversationHistory = [];
     }
-    console.log('2: ', conversationHistory);
+
     conversationHistory.push({ role: 'user', content: question });
 
     if (conversationHistory.length > 20) {
@@ -329,7 +329,7 @@ app.post('/ask', async (req, res) => {
     conversationHistory.push({ role: 'assistant', content: answer });
     
     await saveConversation(userId, conversationHistory);
-    res.status(200).json({ success: true, data: answer });
+    res.status(200).json(answer);
   } catch (error) {
     console.error('Error al procesar con ChatGPT:', error);
     res.status(500).json({ success: false, error: 'Error al procesar con ChatGPT' });
@@ -373,7 +373,7 @@ async function getConversation(userId) {
       }
     });
     console.log('Conversation response: ', response);
-    if (response.data) {
+    if (response.data && response.data !== 'Accepted') {
       return response.data;
     } else {
       console.log('No se encontró conversación previa, iniciando nueva.');
