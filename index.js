@@ -380,7 +380,7 @@ app.post('/ask-giletta', async (req, res) => {
       messages: messages,
       temperature: 0.5,
       max_tokens: 1024,
-      model: 'ft:gpt-4o-mini-2024-07-18:personal:estudio-giletta:9vHldWLD'
+      model: 'ft:gpt-4o-mini-2024-07-18:personal:estudio-giletta-v2:9vIlloAU'
     });
 
     const answer = completion.choices[0].message.content.trim();
