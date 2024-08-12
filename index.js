@@ -292,14 +292,15 @@ app.post('/ask', async (req, res) => {
       return res.status(400).json({ success: false, error: 'La pregunta y el userId son requeridos' });
     }
 
-    if (!conversationHistory[userId]) {
-      conversationHistory[userId] = [];
+    let conversationHistory = await getConversation(userId);
+    if (!conversationHistory) {
+      conversationHistory = [];
     }
 
-    conversationHistory[userId].push({ role: 'user', content: question });
+    conversationHistory.push({ role: 'user', content: question });
 
-    if (conversationHistory[userId].length > 20) {
-      conversationHistory[userId] = conversationHistory[userId].slice(-20);
+    if (conversationHistory.length > 20) {
+      conversationHistory = conversationHistory.slice(-20);
     }
 
     const openai = new OpenAI({
@@ -313,7 +314,7 @@ app.post('/ask', async (req, res) => {
         role: 'system',
         content: 'Eres un asistente comercial inteligente de la agencia de turismo Setil viajes. Tu objetivo es responder las consultas de los usuarios de manera cordial y amable. Utiliza lenguaje descontracturado, muestrate cercano y amigable. Intenta resolver todas las consultas posibles, Si no tienes información para responder la pregunta, recomienda comunicarse con un asesor y brinda los datos de contacto correspondientes.',
       },
-      ...conversationHistory[userId]
+      ...conversationHistory
     ];
 
     const completion = await openai.chat.completions.create({
@@ -324,9 +325,9 @@ app.post('/ask', async (req, res) => {
     });
 
     const answer = completion.choices[0].message.content.trim();
-    conversationHistory[userId].push({ role: 'assistant', content: answer });
+    conversationHistory.push({ role: 'assistant', content: answer });
     
-    // await saveConversation(userId, conversationHistory[userId]);
+    await saveConversation(userId, conversationHistory);
     res.status(200).json({ success: true, data: answer });
   } catch (error) {
     console.error('Error al procesar con ChatGPT:', error);
@@ -335,18 +336,21 @@ app.post('/ask', async (req, res) => {
 });
 
 async function saveConversation(userId, conversation) {
-  const makeUrl = 'https://hook.eu2.make.com/8l2rap71szpkxycvf98my956ktjv68kc';
+  const makeUrl = 'https://hook.eu2.make.com/hd64i572zpn4wu3w28cx716q4mci8nv2';
+  const currentDate = new Date().toISOString();
+
   try {
     const response = await axios.post(makeUrl, {
       user_id: userId,
-      conversation: JSON.stringify(conversation)
+      conversation: JSON.stringify(conversation),
+      date: currentDate
     }, {
       headers: {
         'Content-Type': 'application/json'
       }
     });
 
-    if (response.data.success) {
+    if (response.data) {
       console.log('Mensaje guardado en Google Sheets');
     } else {
       throw new Error('Error al enviar los datos a Google Sheets');
@@ -355,6 +359,31 @@ async function saveConversation(userId, conversation) {
     console.error('Error al enviar los datos a Google Sheets: ', error.message);
   }
 }
+
+async function getConversation(userId) {
+  const makeUrl = 'https://hook.eu2.make.com/fgwuua2kkiejpd92f3kl72oiapr18ji4';
+  try {
+    const response = await axios.get(makeUrl, {
+      params: {
+        user_id: userId
+      },
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.data) {
+      return response.data;
+    } else {
+      console.log('No se encontró conversación previa, iniciando nueva.');
+      return [];
+    }
+  } catch (error) {
+    console.error('Error al recuperar la conversación de Google Sheets: ', error.message);
+    return [];
+  }
+}
+
 
 // Función para crear un canal en Slack
 async function createSlackChannel(userId) {
