@@ -293,10 +293,11 @@ app.post('/ask', async (req, res) => {
     }
 
     let conversationHistory = await getConversation(userId);
+    console.log('1: ', conversationHistory);
     if (!conversationHistory) {
       conversationHistory = [];
     }
-
+    console.log('2: ', conversationHistory);
     conversationHistory.push({ role: 'user', content: question });
 
     if (conversationHistory.length > 20) {
