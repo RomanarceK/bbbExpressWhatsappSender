@@ -320,7 +320,7 @@ app.post('/ask', async (req, res) => {
 
     const completion = await openai.chat.completions.create({
       messages: messages,
-      temperature: 0.8,
+      temperature: 0.5,
       max_tokens: 1024,
       model: 'ft:gpt-4o-mini-2024-07-18:personal:setil-viajes-v4:9uD5DQTE'
     });
@@ -372,7 +372,7 @@ async function getConversation(userId) {
         'Content-Type': 'application/json'
       }
     });
-    console.log('Conversation response: ', response);
+
     if (response.data && response.data !== 'Accepted') {
       return response.data;
     } else {
