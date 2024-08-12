@@ -173,7 +173,8 @@ app.post('/whatsapp-webhook', async (req, res) => {
   console.log('Nuevo mensaje de Whatsapp!');
   const userMessage = req.body.Body;
   const userId = req.body.From.replace('whatsapp:+', '').trim();
-
+  console.log(userMessage);
+  console.log(req.body);
   try {
     // Recuperar el canal de Slack correspondiente
     let slackChannel = await getSlackChannelFromGoogleSheets(userId);
