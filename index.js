@@ -285,8 +285,8 @@ app.post('/parse-json-response', (req, res) => {
 app.post('/ask', async (req, res) => {
   try {
     const openaiKey = process.env.OPENAI_KEY;
-    const question = req.headers.question;
-    const userId = req.headers.userid;
+    const question = req.body.question;
+    const userId = req.body.userid;
 
     if (!question || !userId) {
       return res.status(400).json({ success: false, error: 'La pregunta y el userId son requeridos' });
