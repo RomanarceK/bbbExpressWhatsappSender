@@ -287,12 +287,14 @@ app.post('/ask', async (req, res) => {
     const openaiKey = process.env.OPENAI_KEY;
     const question = req.body.question;
     const userId = req.body.userid;
+    const getUrl = 'https://hook.eu2.make.com/fgwuua2kkiejpd92f3kl72oiapr18ji4';
+    const saveUrl = 'https://hook.eu2.make.com/hd64i572zpn4wu3w28cx716q4mci8nv2';
 
     if (!question || !userId) {
       return res.status(400).json({ success: false, error: 'La pregunta y el userId son requeridos' });
     }
 
-    let conversationHistory = await getConversation(userId);
+    let conversationHistory = await getConversation(userId, getUrl);
 
     if (!conversationHistory || conversationHistory == "Accepted") {
       conversationHistory = [];
@@ -328,7 +330,7 @@ app.post('/ask', async (req, res) => {
     const answer = completion.choices[0].message.content.trim();
     conversationHistory.push({ role: 'assistant', content: answer });
     
-    await saveConversation(userId, conversationHistory);
+    await saveConversation(userId, conversationHistory, saveUrl);
     res.status(200).json(answer);
   } catch (error) {
     console.error('Error al procesar con ChatGPT:', error);
@@ -336,12 +338,67 @@ app.post('/ask', async (req, res) => {
   }
 });
 
-async function saveConversation(userId, conversation) {
-  const makeUrl = 'https://hook.eu2.make.com/hd64i572zpn4wu3w28cx716q4mci8nv2';
+app.post('/ask-giletta', async (req, res) => {
+  try {
+    const openaiKey = process.env.OPENAI_KEY;
+    const question = req.body.question;
+    const userId = req.body.userid;
+    const getUrl = "https://hook.eu2.make.com/bed73d1m8wx66k7w2gqeo5284wjjkwbr";
+    const saveUrl = "https://hook.eu2.make.com/tcqe90ht2hgb522ezae6zd9oi74911ux";
+
+    if (!question || !userId) {
+      return res.status(400).json({ success: false, error: 'La pregunta y el userId son requeridos' });
+    }
+
+    let conversationHistory = await getConversation(userId, getUrl);
+
+    if (!conversationHistory || conversationHistory == "Accepted") {
+      conversationHistory = [];
+    }
+
+    conversationHistory.push({ role: 'user', content: question });
+
+    if (conversationHistory.length > 20) {
+      conversationHistory = conversationHistory.slice(-20);
+    }
+
+    const openai = new OpenAI({
+      apiKey: openaiKey,
+      project: 'proj_Ncjj2if2gtsMh09ypLCLJn1n',
+      organization: 'org-5bhCPYUobXKz9DMRqiLFL5ss'
+    });
+
+    const messages = [
+      {
+        role: 'system',
+        content: 'Eres un asistente de Estudio Giletta, especializado en responder preguntas sobre sus servicios inmobiliarios y legales. Sé conciso, cordial y trata de resolver las consultas sin necesidad de derivar a un asesor a menos que sea absolutamente necesario.',
+      },
+      ...conversationHistory
+    ];
+
+    const completion = await openai.chat.completions.create({
+      messages: messages,
+      temperature: 0.5,
+      max_tokens: 1024,
+      model: 'ft:gpt-4o-mini-2024-07-18:personal:estudio-giletta:9vHldWLD'
+    });
+
+    const answer = completion.choices[0].message.content.trim();
+    conversationHistory.push({ role: 'assistant', content: answer });
+    
+    await saveConversation(userId, conversationHistory, saveUrl);
+    res.status(200).json(answer);
+  } catch (error) {
+    console.error('Error al procesar con ChatGPT:', error);
+    res.status(500).json({ success: false, error: 'Error al procesar con ChatGPT' });
+  }
+});
+
+async function saveConversation(userId, conversation, url) {
   const currentDate = new Date().toISOString();
 
   try {
-    const response = await axios.post(makeUrl, {
+    const response = await axios.post(url, {
       user_id: userId,
       conversation: JSON.stringify(conversation),
       date: currentDate
@@ -361,10 +418,9 @@ async function saveConversation(userId, conversation) {
   }
 }
 
-async function getConversation(userId) {
-  const makeUrl = 'https://hook.eu2.make.com/fgwuua2kkiejpd92f3kl72oiapr18ji4';
+async function getConversation(userId, url) {
   try {
-    const response = await axios.get(makeUrl, {
+    const response = await axios.get(url, {
       params: {
         user_id: userId
       },
