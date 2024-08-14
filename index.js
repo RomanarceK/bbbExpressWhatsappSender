@@ -323,9 +323,9 @@ app.post('/ask', async (req, res) => {
 
     const completion = await openai.chat.completions.create({
       messages: messages,
-      temperature: 0.5,
+      temperature: 0.2,
       max_tokens: 1024,
-      model: 'ft:gpt-4o-mini-2024-07-18:personal:setil-viajes-v4:9uD5DQTE'
+      model: 'ft:gpt-4o-mini-2024-07-18:personal:data-setil:9vu0FmqH'
     });
 
     const answer = completion.choices[0].message.content.trim();
@@ -441,7 +441,6 @@ async function getConversation(userId, url) {
     return [];
   }
 }
-
 
 // Función para crear un canal en Slack
 async function createSlackChannel(userId) {
