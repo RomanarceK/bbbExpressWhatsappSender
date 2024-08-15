@@ -338,7 +338,7 @@ app.post('/ask', async (req, res) => {
 
 app.post('/ask-giletta', async (req, res) => {
   try {
-    const openaiKey = process.env.OPENAI_KEY;
+    const cloudRunUrl = 'https://giletta-app-dbj3r5ttra-uc.a.run.app/generate-response/';
     const question = req.body.question;
     const userId = req.body.userid;
     const getUrl = "https://hook.eu2.make.com/bed73d1m8wx66k7w2gqeo5284wjjkwbr";
@@ -348,43 +348,40 @@ app.post('/ask-giletta', async (req, res) => {
       return res.status(400).json({ success: false, error: 'La pregunta y el userId son requeridos' });
     }
 
+    // Obtener el historial de la conversación
     let conversationHistory = await getConversation(userId, getUrl);
 
     if (!conversationHistory || conversationHistory == "Accepted") {
       conversationHistory = [];
     }
 
-    conversationHistory.push({ role: 'user', content: question });
+    // Agregar la nueva pregunta al historial
+    conversationHistory.push(`role: user, content: ${question}`);
 
+    // Mantener solo las últimas 20 entradas
     if (conversationHistory.length > 20) {
       conversationHistory = conversationHistory.slice(-20);
     }
 
-    const openai = new OpenAI({
-      apiKey: openaiKey,
-      project: 'proj_Ncjj2if2gtsMh09ypLCLJn1n',
-      organization: 'org-5bhCPYUobXKz9DMRqiLFL5ss'
+    // Llamar al servicio en Cloud Run para obtener la respuesta generada
+    const response = await axios.post(cloudRunUrl, {
+      query: question,
+      history: conversationHistory
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
-    const messages = [
-      {
-        role: 'system',
-        content: 'Eres un asistente de Estudio Giletta, especializado en responder preguntas sobre sus servicios inmobiliarios y legales. Sé conciso, cordial y trata de resolver las consultas sin necesidad de derivar a un asesor a menos que sea absolutamente necesario.',
-      },
-      ...conversationHistory
-    ];
+    const answer = response.data.response;
 
-    const completion = await openai.chat.completions.create({
-      messages: messages,
-      temperature: 0.5,
-      max_tokens: 1024,
-      model: 'ft:gpt-4o-mini-2024-07-18:personal:estudio-giletta-v3:9vJZm7Yl'
-    });
+    // Agregar la respuesta del asistente al historial
+    conversationHistory.push(`role: assistant, content: ${answer}`);
 
-    const answer = completion.choices[0].message.content.trim();
-    conversationHistory.push({ role: 'assistant', content: answer });
-    
+    // Guardar el historial de la conversación actualizado
     await saveConversation(userId, conversationHistory, saveUrl);
+
+    // Retornar la respuesta generada a Chatfuel
     res.status(200).json(answer);
   } catch (error) {
     console.error('Error al procesar con ChatGPT:', error);
