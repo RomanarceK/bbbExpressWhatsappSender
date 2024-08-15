@@ -319,8 +319,8 @@ app.post('/ask', async (req, res) => {
         'Content-Type': 'application/json'
       }
     });
-    console.log(response);
     const answer = response.data.response;
+    console.log('SETIL RESPONSE: ', response);
 
     // Agregar la respuesta del asistente al historial
     conversationHistory.push(`role: assistant, content: ${answer}`);
@@ -374,7 +374,7 @@ app.post('/ask-giletta', async (req, res) => {
     });
 
     const answer = response.data.response;
-
+    console.log('GILETTA RESPONSE: ', response);
     // Agregar la respuesta del asistente al historial
     conversationHistory.push(`role: assistant, content: ${answer}`);
 
