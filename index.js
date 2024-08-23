@@ -442,6 +442,59 @@ app.post('/ask-giletta-ig', async (req, res) => {
   }
 });
 
+app.post('/ask-bbbexpress', async (req, res) => {
+  try {
+    const cloudRunUrl = 'https://bbbexpress-app-dbj3r5ttra-uc.a.run.app/generate-response/';
+    const question = req.body.question;
+    const userId = req.body.userid;
+    const getUrl = "https://hook.eu2.make.com/ycaamvx16hpp483or9st54ex52fd2hjn";
+    const saveUrl = "https://hook.eu2.make.com/go1wayfm33cyc6ffe5k0ua1w12h2lruu";
+
+    if (!question || !userId) {
+      return res.status(400).json({ success: false, error: 'La pregunta y el userId son requeridos' });
+    }
+
+    // Obtener el historial de la conversación
+    let conversationHistory = await getConversation(userId, getUrl);
+
+    if (!conversationHistory || conversationHistory == "Accepted") {
+      conversationHistory = [];
+    }
+
+    // Agregar la nueva pregunta al historial
+    conversationHistory.push(`role: user, content: ${question}`);
+
+    // Mantener solo las últimas 20 entradas
+    if (conversationHistory.length > 20) {
+      conversationHistory = conversationHistory.slice(-20);
+    }
+
+    // Llamar al servicio en Cloud Run para obtener la respuesta generada
+    const response = await axios.post(cloudRunUrl, {
+      query: question,
+      history: conversationHistory
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const answer = response.data.response;
+    console.log('BBB RESPONSE: ', response.data.response);
+    // Agregar la respuesta del asistente al historial
+    conversationHistory.push(`role: assistant, content: ${answer}`);
+
+    // Guardar el historial de la conversación actualizado
+    await saveConversation(userId, conversationHistory, saveUrl);
+
+    // Retornar la respuesta generada a Chatfuel
+    res.status(200).json(answer);
+  } catch (error) {
+    console.error('Error al procesar con ChatGPT:', error);
+    res.status(500).json({ success: false, error: 'Error al procesar con ChatGPT' });
+  }
+});
+
 async function saveConversation(userId, conversation, url) {
   const currentDate = new Date().toISOString();
 
