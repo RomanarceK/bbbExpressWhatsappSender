@@ -5,8 +5,7 @@ const moment = require('moment');
 require("dotenv").config();
 const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const axios = require('axios');
-const  { OpenAI } = require('openai');
-let conversationHistory = [];
+const { getSheetData } = require('./googleApiAuth');
 
 const app = express();
 const port = 3001;
@@ -492,6 +491,110 @@ app.post('/ask-bbbexpress', async (req, res) => {
   } catch (error) {
     console.error('Error al procesar con ChatGPT:', error);
     res.status(500).json({ success: false, error: 'Error al procesar con ChatGPT' });
+  }
+});
+
+app.post('/get-itinerary-url', async (req, res) => {
+  try {
+    const openaiApiKey = process.env.OPENAI_KEY;
+    const userId = req.body.userid;
+    const getUrl = 'https://hook.eu2.make.com/fgwuua2kkiejpd92f3kl72oiapr18ji4';
+    const saveUrl = 'https://hook.eu2.make.com/hd64i572zpn4wu3w28cx716q4mci8nv2';
+    const getItineraryUrl = 'https://itinerarios-urls-dbj3r5ttra-uc.a.run.app/get-url';
+    console.log(userId);
+
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'El userId es requerido' });
+    }
+
+    // Obtener el historial de la conversación
+    let conversationHistory = await getConversation(userId, getUrl);
+
+    if (!conversationHistory || conversationHistory == "Accepted") {
+      conversationHistory = [];
+    }
+
+    if (conversationHistory.length > 10) {
+      conversationHistory = conversationHistory.slice(-10);
+    }
+
+    // Recuperar los datos del Google Sheet
+    const viajesData = await getSheetData('Hoja 1!A:E');
+    // Construir la lista de viajes en el prompt
+    let viajesList = "Lista de viajes disponibles:\n";
+    viajesData.forEach(row => {
+      const [viaje, transporte, anio, mes] = row;
+      viajesList += `- Viaje: ${viaje}. Transporte: ${transporte}. Año: ${anio}. Mes: ${mes}.\n`;
+    });
+
+    // Crear el prompt para identificar los parámetros necesarios
+    const prompt = `
+    En base al historial de la conversación con el usuario y el listado de itinerarios disponibles en nuestra base de datos, 
+    debes retornar el nombre del viaje, el transporte, el año y el mes correspondiente para utilizarlos como parámetros en la búsqueda del itinerario solicitado.
+    Usa la lista de viajes disponibles para traducir o adaptar el nombre del viaje mencionado por el usuario. Es importante que el nombre, transporte, año o mes que retornes, coincidan exactamente con el nombre, transporte, año o mes que está almacenado en el listado.
+    Ten en cuenta que el usuario en la conversación puede no haber específicado el tipo de transporte, año o mes de salida del viaje que le interesa. En ese caso, deja el/los datos vacíos y retorna el nombre del viaje que coincida con el itinerario más próximo a salir.
+    Devuelve el resultado en el formato: "viaje: <nombre del viaje>, transporte: <transporte>, año: <año>, mes: <mes>".
+
+    ${viajesList}
+
+    Historial:
+    ${conversationHistory.join('\n')}
+    `;
+
+    // Llamar a la API de OpenAI para obtener los parámetros del itinerario
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "Eres un asistente encargado de analizar el historial de una conversación y determinar el valor de 4 datos importantes para recuperar el itinerario de un viaje específico: nombre del viaje, transporte, año y mes." },
+        { role: "user", content: prompt }
+      ]
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`
+      }
+    });
+
+    const params = response.data.choices[0].message.content.trim();
+    console.log('Parámetros identificados:', params);
+
+    // Extraer los parámetros del LLM
+    const viaje = params.match(/viaje: (.+?),/i)?.[1] || '';
+    const transporte = params.match(/transporte: (.+?),/i)?.[1] || '';
+    const anio = params.match(/año: (.+?),/i)?.[1] || '';
+    const mes = params.match(/mes: (.+?)(?:,|$)/i)?.[1] || '';
+
+    if (!viaje) {
+      return res.status(400).json({ success: false, error: 'No se pudo identificar el nombre del viaje en la conversación' });
+    }
+
+    // Llamar al endpoint /get-url para obtener la URL del itinerario
+    const itineraryResponse = await axios.get(getItineraryUrl, {
+      params: {
+        viaje,
+        transporte,
+        anio,
+        mes
+      },
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const itineraryUrl = itineraryResponse.data.url;
+
+    // Agregar la solicitud y la URL del itinerario al historial
+    conversationHistory.push(`role: user, content: Solicitud de itinerario para ${viaje}`);
+    conversationHistory.push(`role: assistant, content: Aquí tienes el itinerario: ${itineraryUrl}`);
+
+    // Guardar el historial de la conversación actualizado
+    await saveConversation(userId, conversationHistory, saveUrl);
+    console.log('Itinerario enviado: ', itineraryUrl);
+    // Retornar la URL del itinerario a Chatfuel
+    res.status(200).json(itineraryUrl);
+  } catch (error) {
+    console.error('Error al procesar la solicitud de itinerario:', error);
+    res.status(200).json('No se encontró itinerario disponible.');
   }
 });
 
