@@ -4,7 +4,7 @@ const path = require('path');
 
 // Cargar las credenciales del archivo JSON
 const auth = new google.auth.GoogleAuth({
-  keyFile: path.join(__dirname, '/etc/secrets/itinerarios-urls-credentials.json'),
+  keyFile: path.join(__dirname, 'itinerarios-urls-credentials.json'),
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
