@@ -560,9 +560,9 @@ app.post('/get-itinerary-url', async (req, res) => {
 
     // Extraer los parámetros del LLM
     const viaje = params.match(/viaje: (.+?),/i)?.[1] || '';
-    const transporte = params.match(/transporte: (.+?),/i)?.[1] || '';
-    const anio = params.match(/año: (.+?),/i)?.[1] || '';
-    const mes = params.match(/mes: (.+?)(?:,|$)/i)?.[1] || '';
+    const transporte = params.match(/transporte: (.+?),/i)?.[1].trim() === '-' ? '' : params.match(/transporte: (.+?),/i)?.[1] || '';
+    const anio = params.match(/año: (.+?),/i)?.[1].trim() === '-' ? '' : params.match(/año: (.+?),/i)?.[1] || '';
+    const mes = params.match(/mes: (.+?)(?:,|$)/i)?.[1].trim() === '-' ? '' : params.match(/mes: (.+?)(?:,|$)/i)?.[1] || '';
 
     if (!viaje) {
       return res.status(400).json({ success: false, error: 'No se pudo identificar el nombre del viaje en la conversación' });
