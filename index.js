@@ -533,6 +533,7 @@ app.post('/get-itinerary-url', async (req, res) => {
     debes retornar el nombre del viaje, el transporte, el año y el mes correspondiente para utilizarlos como parámetros en la búsqueda del itinerario solicitado.
     Usa la lista de viajes disponibles para traducir o adaptar el nombre del viaje mencionado por el usuario. Es importante que el nombre, transporte, año o mes que retornes, coincidan exactamente con el nombre, transporte, año o mes que está almacenado en el listado.
     Ten en cuenta que el usuario en la conversación puede no haber específicado el tipo de transporte, año o mes de salida del viaje que le interesa. En ese caso, deja el/los datos vacíos y retorna el nombre del viaje que coincida con el itinerario más próximo a salir.
+    También ten en cuenta que en el historial de la conversación, puede haber información sobre transporte, año o mes del itinerario que no esté almacenada o especificada en la lista de viajes disponibles. Si es el caso no la retornes, ya que eso evitará que haya coincidencias en la búsqueda del itinerario.
     Devuelve el resultado en el formato: "viaje: <nombre del viaje>, transporte: <transporte>, año: <año>, mes: <mes>".
 
     ${viajesList}
