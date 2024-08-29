@@ -514,8 +514,8 @@ app.post('/get-itinerary-url', async (req, res) => {
       conversationHistory = [];
     }
 
-    if (conversationHistory.length > 10) {
-      conversationHistory = conversationHistory.slice(-10);
+    if (conversationHistory.length > 5) {
+      conversationHistory = conversationHistory.slice(-5);
     }
 
     // Recuperar los datos del Google Sheet
