@@ -514,8 +514,8 @@ app.post('/get-itinerary-url', async (req, res) => {
       conversationHistory = [];
     }
 
-    if (conversationHistory.length > 8) {
-      conversationHistory = conversationHistory.slice(-8);
+    if (conversationHistory.length > 4) {
+      conversationHistory = conversationHistory.slice(-4);
     }
     console.log('Conversation HISTORY: ', conversationHistory);
 
