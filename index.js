@@ -305,8 +305,8 @@ app.post('/ask', async (req, res) => {
     conversationHistory.push(`role: user, content: ${question}`);
 
     // Mantener solo las últimas 20 entradas
-    if (conversationHistory.length > 20) {
-      conversationHistory = conversationHistory.slice(-20);
+    if (conversationHistory.length > 8) {
+      conversationHistory = conversationHistory.slice(-8);
     }
 
     // Llamar al servicio en Cloud Run para obtener la respuesta generada
