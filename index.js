@@ -517,6 +517,7 @@ app.post('/get-itinerary-url', async (req, res) => {
     if (conversationHistory.length > 8) {
       conversationHistory = conversationHistory.slice(-8);
     }
+    console.log('Conversation HISTORY: ', conversationHistory);
 
     // Recuperar los datos del Google Sheet
     const viajesData = await getSheetData('Hoja 1!A:E');
