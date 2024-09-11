@@ -284,7 +284,7 @@ app.post('/parse-json-response', (req, res) => {
 
 app.post('/ask', async (req, res) => {
   try {
-    const cloudRunUrl = 'https://setil-free-app-dbj3r5ttra-uc.a.run.app/generate-response/';
+    const cloudRunUrl = 'https://setil-free-app-619713117025.us-central1.run.app/generate-response/';
     const question = req.body.question;
     const userId = req.body.userid;
     const getUrl = 'https://hook.eu2.make.com/fgwuua2kkiejpd92f3kl72oiapr18ji4';
