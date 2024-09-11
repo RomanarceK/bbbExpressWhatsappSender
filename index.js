@@ -500,7 +500,7 @@ app.post('/get-itinerary-url', async (req, res) => {
     const userId = req.body.userid;
     const getUrl = 'https://hook.eu2.make.com/fgwuua2kkiejpd92f3kl72oiapr18ji4';
     const saveUrl = 'https://hook.eu2.make.com/hd64i572zpn4wu3w28cx716q4mci8nv2';
-    const getItineraryUrl = 'https://itinerarios-urls-dbj3r5ttra-uc.a.run.app/get-url';
+    const getItineraryUrl = 'https://itinerarios-urls-619713117025.us-central1.run.app/get-url';
     console.log(userId);
 
     if (!userId) {
