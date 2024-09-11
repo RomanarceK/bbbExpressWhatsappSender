@@ -514,8 +514,8 @@ app.post('/get-itinerary-url', async (req, res) => {
       conversationHistory = [];
     }
 
-    if (conversationHistory.length > 5) {
-      conversationHistory = conversationHistory.slice(-5);
+    if (conversationHistory.length > 8) {
+      conversationHistory = conversationHistory.slice(-8);
     }
 
     // Recuperar los datos del Google Sheet
@@ -530,12 +530,15 @@ app.post('/get-itinerary-url', async (req, res) => {
     // Crear el prompt para identificar los parámetros necesarios
     const prompt = `
     En base al historial de la conversación con el usuario y el listado de itinerarios disponibles en nuestra base de datos, 
-    debes retornar el nombre del viaje, el transporte, el año y el mes correspondiente para utilizarlos como parámetros en la búsqueda del itinerario solicitado.
+    debes seleccionar y retornar el nombre del viaje, el transporte, el año y el mes adecuado, para utilizarlos como parámetros en la búsqueda del itinerario mediante una solicitud http y que haya una coincidencia entre los parámetros relacionados a el viaje en el listado y el viaje que menciona el usuario.
     Usa la lista de viajes disponibles para traducir o adaptar el nombre del viaje mencionado por el usuario. Es importante que el nombre, transporte, año o mes que retornes, coincidan exactamente con el nombre, transporte, año o mes que está almacenado en el listado.
     Ten en cuenta que el usuario en la conversación puede no haber específicado el tipo de transporte, año o mes de salida del viaje que le interesa. En ese caso, deja el/los datos vacíos y retorna el nombre del viaje que coincida con el itinerario más próximo a salir.
     También ten en cuenta que en el historial de la conversación, puede haber información sobre transporte, año o mes del itinerario que no esté almacenada o especificada en la lista de viajes disponibles. Si es el caso no la retornes, ya que eso evitará que haya coincidencias en la búsqueda del itinerario.
+    La busqueda generará coincidencias y retornará el itinerario solo si se cumple al menos una condición. Es decir, si existe un itinerario bajo el nombre que enviamos por parámetro, retornará un resultado. Si se cumple lo anterior pero no coinciden alguno de los parámetros con los datos del itinerario almacenado, no retornará nada. Por esto, es importante retornar solo los parámetros que nos aseguren una coincidencia.
+    Retorna siempre los datos relacionados al último viaje mencionado en el historial de la conversación. Pueden haberse mencionado más de un viaje en el historial, dale relevancia únicamente al útlimo del que se esté hablando. 
     Devuelve el resultado en el formato: "viaje: <nombre del viaje>, transporte: <transporte>, año: <año>, mes: <mes>".
 
+    Listado de itinerarios:
     ${viajesList}
 
     Historial:
