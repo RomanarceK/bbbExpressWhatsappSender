@@ -1,4 +1,8 @@
 const express = require('express');
+const { connectToDatabase } = require('./mongodb');
+const { auth } = require('express-openid-connect');
+const { requiresAuth } = require('express-openid-connect');
+const cors = require('cors');
 const xml2js = require('xml2js');
 const bodyParser = require('body-parser');
 const moment = require('moment');
@@ -7,12 +11,46 @@ const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWI
 const axios = require('axios');
 const { getSheetData } = require('./googleApiAuth');
 
+const config = {
+  authRequired: false,
+  auth0Logout: true,
+  baseURL: 'http://localhost:3000',
+  clientID: process.env.AUTH0_CLIENT_ID,
+  issuerBaseURL: 'https://dev-ea2ntdw66ig5pubp.us.auth0.com',
+  secret: process.env.AUTH0_CLIENT_SECRET
+};
+
 const app = express();
 const port = 3001;
+
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(bodyParser.raw({ type: '*/*' }));
+app.use(auth(config));
+
+let db, conversationsCollection;
+
+// Conexión a la base de datos
+connectToDatabase().then(database => {
+  db = database;
+  conversationsCollection = db.collection('setil-conversations');
+});
+
+// Obtener todas las conversaciones
+app.get('/get-conversations', async (req, res) => {
+  try {
+    const conversations = await conversationsCollection.find({}).toArray();
+    res.status(200).json(conversations);
+  } catch (error) {
+    console.error('Error al obtener conversaciones:', error);
+    res.status(500).json({ message: 'Error al obtener conversaciones.' });
+  }
+});
 
 app.post('/send-message', async (req, res) => {
   const userData = req.body;
@@ -287,15 +325,15 @@ app.post('/ask', async (req, res) => {
     const cloudRunUrl = 'https://setil-free-app-619713117025.us-central1.run.app/generate-response/';
     const question = req.body.question;
     const userId = req.body.userid;
-    const getUrl = 'https://hook.eu2.make.com/fgwuua2kkiejpd92f3kl72oiapr18ji4';
-    const saveUrl = 'https://hook.eu2.make.com/hd64i572zpn4wu3w28cx716q4mci8nv2';
+    const username = req.body.username;
+    const phone = req.body.phone;
 
     if (!question || !userId) {
       return res.status(400).json({ success: false, error: 'La pregunta y el userId son requeridos' });
     }
 
     // Obtener el historial de la conversación
-    let conversationHistory = await getConversation(userId, getUrl);
+    let conversationHistory = await getConversation(userId);
 
     if (!conversationHistory || conversationHistory == "Accepted") {
       conversationHistory = [];
@@ -325,7 +363,7 @@ app.post('/ask', async (req, res) => {
     conversationHistory.push(`role: assistant, content: ${answer}`);
 
     // Guardar el historial de la conversación actualizado
-    await saveConversation(userId, conversationHistory, saveUrl);
+    await saveConversation(userId, conversationHistory, username, phone);
 
     // Retornar la respuesta generada a Chatfuel
     res.status(200).json(answer);
@@ -603,49 +641,41 @@ app.post('/get-itinerary-url', async (req, res) => {
   }
 });
 
-async function saveConversation(userId, conversation, url) {
-  const currentDate = new Date().toISOString();
-
+async function saveConversation(userId, conversationHistory, username, phone) {
   try {
-    const response = await axios.post(url, {
-      user_id: userId,
-      conversation: JSON.stringify(conversation),
-      date: currentDate
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (response.data) {
-      console.log('Mensaje guardado en Google Sheets');
+    const existingConversation = await conversationsCollection.findOne({ userId });
+    
+    if (existingConversation) {
+      await conversationsCollection.updateOne(
+        { userId },
+        { $set: { content: conversationHistory, updated_at: new Date() } }
+      );
     } else {
-      throw new Error('Error al enviar los datos a Google Sheets');
+      const newConversation = {
+        userId,
+        username,
+        phone,
+        content: conversationHistory,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+      await conversationsCollection.insertOne(newConversation);
     }
+    console.log('Conversación guardada correctamente');
   } catch (error) {
-    console.error('Error al enviar los datos a Google Sheets: ', error.message);
+    console.error('Error al guardar el historial:', error);
   }
 }
 
-async function getConversation(userId, url) {
+async function getConversation(userId) {
   try {
-    const response = await axios.get(url, {
-      params: {
-        user_id: userId
-      },
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (response.data && response.data !== 'Accepted') {
-      return response.data;
-    } else {
-      console.log('No se encontró conversación previa, iniciando nueva.');
-      return [];
+    const conversation = await conversationsCollection.findOne({ userId });
+    if (conversation && conversation.content) {
+      return conversation.content;
     }
+    return [];
   } catch (error) {
-    console.error('Error al recuperar la conversación de Google Sheets: ', error.message);
+    console.error('Error al recuperar el historial:', error);
     return [];
   }
 }
