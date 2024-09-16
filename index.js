@@ -333,7 +333,7 @@ app.post('/ask', async (req, res) => {
     }
 
     // Obtener el historial de la conversación
-    let conversationHistory = await getConversation(userId);
+    let conversationHistory = await getConversationNewUI(userId);
 
     if (!conversationHistory || conversationHistory == "Accepted") {
       conversationHistory = [];
@@ -363,7 +363,7 @@ app.post('/ask', async (req, res) => {
     conversationHistory.push(`role: assistant, content: ${answer}`);
 
     // Guardar el historial de la conversación actualizado
-    await saveConversation(userId, conversationHistory, username, phone);
+    await saveConversationNewUI(userId, conversationHistory, username, phone);
 
     // Retornar la respuesta generada a Chatfuel
     res.status(200).json(answer);
@@ -641,7 +641,7 @@ app.post('/get-itinerary-url', async (req, res) => {
   }
 });
 
-async function saveConversation(userId, conversationHistory, username, phone) {
+async function saveConversationNewUI(userId, conversationHistory, username, phone) {
   try {
     const existingConversation = await conversationsCollection.findOne({ userId });
     
@@ -667,7 +667,7 @@ async function saveConversation(userId, conversationHistory, username, phone) {
   }
 }
 
-async function getConversation(userId) {
+async function getConversationNewUI(userId) {
   try {
     const conversation = await conversationsCollection.findOne({ userId });
     if (conversation && conversation.content) {
@@ -676,6 +676,53 @@ async function getConversation(userId) {
     return [];
   } catch (error) {
     console.error('Error al recuperar el historial:', error);
+    return [];
+  }
+}
+
+async function saveConversation(userId, conversation, url) {
+  const currentDate = new Date().toISOString();
+
+  try {
+    const response = await axios.post(url, {
+      user_id: userId,
+      conversation: JSON.stringify(conversation),
+      date: currentDate
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.data) {
+      console.log('Mensaje guardado en Google Sheets');
+    } else {
+      throw new Error('Error al enviar los datos a Google Sheets');
+    }
+  } catch (error) {
+    console.error('Error al enviar los datos a Google Sheets: ', error.message);
+  }
+}
+
+async function getConversation(userId, url) {
+  try {
+    const response = await axios.get(url, {
+      params: {
+        user_id: userId
+      },
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.data && response.data !== 'Accepted') {
+      return response.data;
+    } else {
+      console.log('No se encontró conversación previa, iniciando nueva.');
+      return [];
+    }
+  } catch (error) {
+    console.error('Error al recuperar la conversación de Google Sheets: ', error.message);
     return [];
   }
 }
