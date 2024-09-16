@@ -1,11 +1,7 @@
 require("dotenv").config();
 const { MongoClient } = require('mongodb');
 const uri = process.env.MONGO_DB_URI;
-const client = new MongoClient(uri, {
-  useUnifiedTopology: true, // Elimina `useNewUrlParser`, ya que está deprecado
-  tls: true, // Forzar TLS para conexiones seguras
-  tlsAllowInvalidCertificates: false, // Rechazar certificados inválidos
-});
+const client = new MongoClient(uri);
 
 async function connectToDatabase() {
   try {
