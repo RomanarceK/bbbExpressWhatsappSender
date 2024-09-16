@@ -6,8 +6,9 @@ const client = new MongoClient(uri);
 async function connectToDatabase() {
   try {
     await client.connect();
-    console.log('Conectado a MongoDB Atlas');
     const db = client.db('avi-conversations-db');
+    db.command({ping: 1});
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
     return db;
   } catch (error) {
     console.error('Error al conectar a MongoDB:', error);
