@@ -14,7 +14,7 @@ const { getSheetData } = require('./googleApiAuth');
 const config = {
   authRequired: false,
   auth0Logout: true,
-  baseURL: 'http://localhost:3000',
+  baseURL: 'https://interfaz-avi.onrender.com',
   clientID: process.env.AUTH0_CLIENT_ID,
   issuerBaseURL: 'https://dev-ea2ntdw66ig5pubp.us.auth0.com',
   secret: process.env.AUTH0_CLIENT_SECRET
@@ -24,7 +24,7 @@ const app = express();
 const port = 3001;
 
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: 'https://interfaz-avi.onrender.com',
   credentials: true
 }));
 
