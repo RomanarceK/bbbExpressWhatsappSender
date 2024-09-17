@@ -3,7 +3,7 @@ const { connectToDatabase, getCollection  } = require('../mongodb');
 async function saveConversationNewUI(userId, conversationHistory, username, phone, client) {
     try {
         await connectToDatabase();
-        const conversationsCollection = getCollection(`${client}_conversations`);
+        const conversationsCollection = getCollection(`${client}-conversations`);
         const existingConversation = await conversationsCollection.findOne({ userId });
         
         if (existingConversation) {
@@ -31,7 +31,7 @@ async function saveConversationNewUI(userId, conversationHistory, username, phon
 async function getConversationNewUI(userId, client) {
     try {
         await connectToDatabase();
-        const conversationsCollection = getCollection(`${client}_conversations`);
+        const conversationsCollection = getCollection(`${client}-conversations`);
         const conversation = await conversationsCollection.findOne({ userId });
         if (conversation && conversation.content) {
             return conversation.content;
