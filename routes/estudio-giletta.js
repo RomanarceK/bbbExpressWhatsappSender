@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const router = Router();
 const { getConversation, saveConversation } = require('../hooks/useMake');
+const axios = require('axios');
 
 router.post('/ask-giletta', async (req, res) => {
   try {

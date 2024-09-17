@@ -2,6 +2,7 @@ const { Router } = require('express');
 const router = Router();
 const { getSheetData } = require('../googleApiAuth');
 const { getConversationNewUI, saveConversationNewUI } = require('../hooks/useConversations');
+const axios = require('axios');
 
 router.post('/get-itinerary-url', async (req, res) => {
     try {
