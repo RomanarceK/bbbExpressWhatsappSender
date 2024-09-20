@@ -39,22 +39,29 @@ router.post('/get-itinerary-url', async (req, res) => {
   
       // Crear el prompt para identificar los parámetros necesarios
       const prompt = `
-      En base al último mensaje del historial de la conversación con el usuario y el listado de itinerarios disponibles en nuestra base de datos, 
-      debes seleccionar y retornar el nombre del viaje, el transporte, el año y el mes adecuado, para utilizarlos como parámetros en la búsqueda del itinerario y que haya una coincidencia.
-      Usa la lista de itinerarios disponibles para traducir o adaptar el nombre del viaje mencionado por el usuario. Es importante que el nombre, transporte, año o mes que retornes, coincidan exactamente con el nombre, transporte, año o mes que está almacenado en el listado.
-      Ten en cuenta que el usuario en la conversación puede no haber específicado el tipo de transporte, año o mes de salida del viaje que le interesa. En ese caso, deja el/los datos vacíos y retorna el nombre del viaje que coincida con el itinerario más próximo a salir.
-      También ten en cuenta que en el historial de la conversación, puede haber información sobre transporte, año o mes del itinerario que no esté almacenada o especificada en la lista de viajes disponibles. Si es el caso no la retornes, ya que eso evitará que haya coincidencias en la búsqueda del itinerario.
-      La busqueda generará coincidencias y retornará el itinerario solo si se cumple al menos una condición. Es decir, si existe un itinerario bajo el nombre que enviamos por parámetro, retornará un resultado. Si se cumple lo anterior pero no coinciden alguno de los parámetros con los datos del itinerario almacenado, no retornará nada. Por esto, es importante retornar solo los parámetros que nos aseguren una coincidencia.
-      Retorna siempre y únicamente la información relacionados al último viaje mencionado en el historial de la conversación. Pueden haberse mencionado más de un viaje en el historial, dale relevancia únicamente al mencionado en el útlimo mensaje. 
-      Devuelve el resultado en el formato: "viaje: <nombre del viaje>, transporte: <transporte>, año: <año>, mes: <mes>".
-  
+      Basado en el último mensaje del historial de la conversación con el usuario y el listado de itinerarios disponibles en nuestra base de datos,
+      selecciona y retorna únicamente el **nombre del viaje** que mejor coincida con lo mencionado por el usuario.
+      
+      Usa la lista de itinerarios disponibles para traducir o adaptar el nombre del viaje mencionado por el usuario. Es importante que el nombre
+      que retornes coincida **exactamente** con uno de los nombres almacenados en el listado de itinerarios.
+
+      Si el usuario menciona más de un viaje en el historial de la conversación, **ignora los anteriores** y dale relevancia únicamente al viaje
+      mencionado en el último mensaje.
+
+      Ten en cuenta que el usuario puede no haber especificado el nombre del viaje de forma exacta o completa, por lo que debes seleccionar el 
+      nombre del viaje más cercano o relevante basado en el contexto. Si no hay coincidencias claras, retorna un mensaje vacío.
+
+      No consideres ningún otro dato como el transporte, el año o el mes del viaje. Solo necesitamos el nombre exacto que coincida con los datos
+      almacenados en nuestra lista de itinerarios.
+
+      Devuelve solo el nombre del viaje en el formato: "viaje: <nombre del viaje>". No devuelvas ningún otro dato o texto adicional.
+
       Historial de la conversación:
       ${cutConversationHistory.join('\n')}
-      
-      Listado de itinerarios:
+
+      Listado de itinerarios disponibles:
       ${viajesList}
-  
-      `;
+    `;
   
       // Llamar a la API de OpenAI para obtener los parámetros del itinerario
       const response = await axios.post('https://api.openai.com/v1/chat/completions', {
@@ -74,10 +81,7 @@ router.post('/get-itinerary-url', async (req, res) => {
       console.log('Parámetros identificados:', params);
   
       // Extraer los parámetros del LLM
-      const viaje = params.match(/viaje: (.+?),/i)?.[1] || '';
-      const transporte = params.match(/transporte: (.+?),/i)?.[1].trim() === '-' ? '' : params.match(/transporte: (.+?),/i)?.[1] || '';
-      const anio = params.match(/año: (.+?),/i)?.[1].trim() === '-' ? '' : params.match(/año: (.+?),/i)?.[1] || '';
-      const mes = params.match(/mes: (.+?)(?:,|$)/i)?.[1].trim() === '-' ? '' : params.match(/mes: (.+?)(?:,|$)/i)?.[1] || '';
+      const viaje = params.match(/viaje: (.+?)(,|$)/i)?.[1] || '';
       if (!viaje) {
         return res.status(400).json({ success: false, error: 'No se pudo identificar el nombre del viaje en la conversación' });
       }
@@ -85,10 +89,7 @@ router.post('/get-itinerary-url', async (req, res) => {
       // Llamar al endpoint /get-url para obtener la URL del itinerario
       const itineraryResponse = await axios.get(getItineraryUrl, {
         params: {
-          viaje,
-          transporte,
-          anio,
-          mes
+          viaje
         },
         headers: {
           'Content-Type': 'application/json'
