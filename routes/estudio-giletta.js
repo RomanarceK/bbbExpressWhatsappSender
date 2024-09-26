@@ -1,22 +1,22 @@
 const { Router } = require('express');
 const router = Router();
-const { getConversation, saveConversation } = require('../hooks/useMake');
+const { getConversationNewUI, saveConversationNewUI } = require('../hooks/useConversations');
 const axios = require('axios');
 
-router.post('/ask-giletta', async (req, res) => {
+router.post('/ask', async (req, res) => {
   try {
     const cloudRunUrl = 'https://giletta-app-619713117025.us-central1.run.app/generate-response/';
     const question = req.body.question;
     const userId = req.body.userid;
-    const getUrl = "https://hook.eu2.make.com/bed73d1m8wx66k7w2gqeo5284wjjkwbr";
-    const saveUrl = "https://hook.eu2.make.com/tcqe90ht2hgb522ezae6zd9oi74911ux";
+    const username = req.body.username;
+    const phone = req.body.phone;
 
     if (!question || !userId) {
       return res.status(400).json({ success: false, error: 'La pregunta y el userId son requeridos' });
     }
 
     // Obtener el historial de la conversación
-    let conversationHistory = await getConversation(userId, getUrl);
+    let conversationHistory = await getConversationNewUI(userId, 'giletta');
 
     if (!conversationHistory || conversationHistory == "Accepted") {
       conversationHistory = [];
@@ -46,7 +46,7 @@ router.post('/ask-giletta', async (req, res) => {
     conversationHistory.push(`role: assistant, content: ${answer}`);
 
     // Guardar el historial de la conversación actualizado
-    await saveConversation(userId, conversationHistory, saveUrl);
+    await saveConversationNewUI(userId, conversationHistory, username, phone, 'giletta');
 
     // Retornar la respuesta generada a Chatfuel
     res.status(200).json(answer);

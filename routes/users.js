@@ -78,4 +78,47 @@ router.post('/create-user', async (req, res) => {
   }
 });
 
+router.post('/update-profile', async (req, res) => {
+  const { user_id, email, username, phone, address } = req.body;
+
+  if (!user_id) {
+    return res.status(400).json({ message: 'Los campos obligatorios son: user_id, email y username.' });
+  }
+
+  try {
+    await connectToDatabase();
+    const usersCollection = getCollection('users');
+    const existingUser = await usersCollection.findOne({ user_id });
+
+    if (!existingUser) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
+    }
+
+    const updatedData = {
+      email,
+      username,
+      phone: phone || existingUser.phone,
+      address: address || existingUser.address,
+      updated_at: new Date()
+    };
+
+    const result = await usersCollection.updateOne(
+      { user_id },
+      { $set: updatedData }
+    );
+
+    if (result.modifiedCount > 0) {
+      res.status(200).json({
+        message: 'Perfil actualizado exitosamente',
+        user: { ...existingUser, ...updatedData }
+      });
+    } else {
+      res.status(500).json({ message: 'No se pudo actualizar el perfil.' });
+    }
+  } catch (error) {
+    console.error('Error al actualizar el perfil:', error);
+    res.status(500).json({ message: 'Error al actualizar el perfil.' });
+  }
+});
+
 module.exports = router;
