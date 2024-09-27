@@ -7,7 +7,6 @@ router.get('/get-conversations', async (req, res) => {
   try {
     await connectToDatabase();
     const userId = req.auth.sub;
-    console.log(userId);
     const usersCollection = getCollection('users');
     const user = await usersCollection.findOne({ user_id: userId });
 

@@ -20,7 +20,7 @@ router.get('/get-user/:user_id', async (req, res) => {
   try {
     await connectToDatabase();
     const usersCollection = getCollection('users');
-    const user = await usersCollection.findOne({ user_id });
+    const user = await usersCollection.findOne({ sub: user_id });
 
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -35,17 +35,13 @@ router.get('/get-user/:user_id', async (req, res) => {
 
 router.post('/create-user', async (req, res) => {
   const userData = req.body;
+  const user_id = userData.sub;
 
   try {
     await connectToDatabase();
     const usersCollection = getCollection('users');
 
-    const existingUser = await usersCollection.findOne({
-      $or: [
-        { user_id: userData.user_id },
-        { email: userData.email }
-      ]
-    });
+    const existingUser = await usersCollection.findOne({ sub: user_id });
 
     if (existingUser) {
       return res.status(409).json({
@@ -78,8 +74,8 @@ router.post('/create-user', async (req, res) => {
   }
 });
 
-router.post('/update-profile', async (req, res) => {
-  const { user_id, email, username, phone, address } = req.body;
+router.post('/update-user', async (req, res) => {
+  const { user_id, email, name, phone, address } = req.body;
 
   if (!user_id) {
     return res.status(400).json({ message: 'Los campos obligatorios son: user_id, email y username.' });
@@ -88,7 +84,7 @@ router.post('/update-profile', async (req, res) => {
   try {
     await connectToDatabase();
     const usersCollection = getCollection('users');
-    const existingUser = await usersCollection.findOne({ user_id });
+    const existingUser = await usersCollection.findOne({ sub: user_id });
 
     if (!existingUser) {
       return res.status(404).json({ message: 'Usuario no encontrado.' });
@@ -96,14 +92,14 @@ router.post('/update-profile', async (req, res) => {
 
     const updatedData = {
       email,
-      username,
+      name,
       phone: phone || existingUser.phone,
       address: address || existingUser.address,
       updated_at: new Date()
     };
 
     const result = await usersCollection.updateOne(
-      { user_id },
+      { sub: user_id },
       { $set: updatedData }
     );
 
