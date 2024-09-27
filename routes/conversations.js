@@ -8,7 +8,7 @@ router.get('/get-conversations', async (req, res) => {
     await connectToDatabase();
     const userId = req.auth.sub;
     const usersCollection = getCollection('users');
-    const user = await usersCollection.findOne({ user_id: userId });
+    const user = await usersCollection.findOne({ sub: userId });
 
     if (!user) {
       return res.status(404).send('Usuario no encontrado');
