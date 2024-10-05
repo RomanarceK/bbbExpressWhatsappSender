@@ -8,6 +8,7 @@ const { connectToDatabase } = require('./mongodb');
 const conversationsRoutes = require('./routes/conversations');
 const usersRoutes = require('./routes/users');
 const setilRoutes = require('./routes/setil');
+const wodaRoutes = require('./routes/woda');
 const bbbExpressRoutes = require('./routes/bbb-express');
 const gilettaRoutes = require('./routes/estudio-giletta');
 const slackRoutes = require('./routes/slack-live');
@@ -51,6 +52,7 @@ app.use('/api/setil', setilRoutes);
 app.use('/api/bbb-express', bbbExpressRoutes);
 app.use('/api/giletta', gilettaRoutes);
 app.use('/api/slack', slackRoutes);
+app.use('/api/woda', wodaRoutes);
 
 app.listen(port, () => {
   console.log(`Server listening on port: ${port}`);
