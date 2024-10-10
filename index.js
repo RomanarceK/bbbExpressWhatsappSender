@@ -12,7 +12,7 @@ const wodaRoutes = require('./routes/woda');
 const bbbExpressRoutes = require('./routes/bbb-express');
 const gilettaRoutes = require('./routes/estudio-giletta');
 const slackRoutes = require('./routes/slack-live');
-const allowedOrigins = ['https://interfaz-avi.onrender.com', 'http://localhost:3000', 'https://avi-flyup.ar', 'http://127.0.0.1:5500'];
+const allowedOrigins = ['https://interfaz-avi.onrender.com', 'http://localhost:3000', 'https://avi-flyup.ar', 'http://127.0.0.1:5500', 'https://flyup.ar'];
 
 const app = express();
 const port = 3001;
