@@ -9,6 +9,7 @@ router.post('/get-itinerary-url', async (req, res) => {
       const openaiApiKey = process.env.OPENAI_KEY;
       const userId = req.body.userid;
       const username = req.body.username;
+      const query = req.body.query;
       const phone = req.body.phone;
       const getItineraryUrl = 'https://itinerarios-urls-619713117025.us-central1.run.app/get-url';
   
@@ -58,6 +59,8 @@ router.post('/get-itinerary-url', async (req, res) => {
 
       Historial de la conversación:
       ${cutConversationHistory.join('\n')}
+
+      Ultima pregunta: ${query}
 
       Listado de itinerarios disponibles:
       ${viajesList}
