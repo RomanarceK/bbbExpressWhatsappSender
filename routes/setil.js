@@ -109,7 +109,10 @@ router.post('/get-itinerary-url', async (req, res) => {
       await saveConversationNewUI(userId, conversationHistory, username, phone, 'setil');
       console.log('Itinerario enviado: ', itineraryUrl);
       // Retornar la URL del itinerario a Chatfuel
-      res.status(200).json(itineraryUrl);
+      res.status(200).json({
+      success: true,
+      itinerary: itineraryUrl
+    });
     } catch (error) {
       console.error('Error al procesar la solicitud de itinerario:', error);
       res.status(200).json('No se encontró itinerario disponible.');
