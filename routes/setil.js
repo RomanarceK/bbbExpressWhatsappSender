@@ -24,8 +24,8 @@ router.post('/get-itinerary-url', async (req, res) => {
         conversationHistory = [];
       }
       let cutConversationHistory = [];
-      if (conversationHistory.length > 2) {
-        cutConversationHistory = conversationHistory.slice(-2);
+      if (conversationHistory.length > 6) {
+        cutConversationHistory = conversationHistory.slice(-6);
       }
       console.log('Conversation HISTORY: ', conversationHistory);
   
@@ -40,17 +40,17 @@ router.post('/get-itinerary-url', async (req, res) => {
   
       // Crear el prompt para identificar los parámetros necesarios
       const prompt = `
-      Basado en el último mensaje del historial de la conversación con el usuario y el listado de itinerarios disponibles en nuestra base de datos,
+      Basado en el historial de la conversación, la intención del usuario, su último mensaje y el listado de itinerarios disponibles en nuestra base de datos,
       selecciona y retorna únicamente el **nombre del viaje** que mejor coincida con lo mencionado por el usuario.
       
-      Usa la lista de itinerarios disponibles para traducir o adaptar el nombre del viaje mencionado por el usuario. Es importante que el nombre
-      que retornes coincida **exactamente** con uno de los nombres almacenados en el listado de itinerarios.
+      Usa la lista de itinerarios disponibles para traducir o adaptar el nombre del viaje solicitado por el usuario. Es importante que el nombre
+      que retornes coincida **exactamente** con uno de los nombres almacenados en el listado de itinerarios de mi base de datos.
 
       Si el usuario menciona más de un viaje en el historial de la conversación, **ignora los anteriores** y dale relevancia únicamente al viaje
-      mencionado en el último mensaje.
+      mencionado en el último mensaje o al que coincida con la intención del usuario.
 
       Ten en cuenta que el usuario puede no haber especificado el nombre del viaje de forma exacta o completa, por lo que debes seleccionar el 
-      nombre del viaje más cercano o relevante basado en el contexto. Si no hay coincidencias claras, retorna un mensaje vacío.
+      nombre del viaje más cercano o relevante basado en el contexto y el historial de la conversación.
 
       No consideres ningún otro dato como el transporte, el año o el mes del viaje. Solo necesitamos el nombre exacto que coincida con los datos
       almacenados en nuestra lista de itinerarios.
@@ -70,7 +70,7 @@ router.post('/get-itinerary-url', async (req, res) => {
       const response = await axios.post('https://api.openai.com/v1/chat/completions', {
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "Eres un asistente encargado de analizar el historial de una conversación y determinar el valor de 4 datos importantes para recuperar el itinerario de un viaje específico: nombre del viaje, transporte, año y mes." },
+          { role: "system", content: "Eres un asistente encargado de analizar el historial de una conversación y determinar el valor del nombre del viaje para recuperar su itinerario específico." },
           { role: "user", content: prompt }
         ]
       }, {
@@ -102,7 +102,7 @@ router.post('/get-itinerary-url', async (req, res) => {
       const itineraryUrl = itineraryResponse.data.url;
   
       // Agregar la solicitud y la URL del itinerario al historial
-      conversationHistory.push(`role: user, content: Solicitud de itinerario para ${viaje}`);
+      conversationHistory.push(`role: user, content: ${query}`);
       conversationHistory.push(`role: assistant, content: Aquí tienes el itinerario: ${itineraryUrl}`);
   
       // Guardar el historial de la conversación actualizado
@@ -110,9 +110,9 @@ router.post('/get-itinerary-url', async (req, res) => {
       console.log('Itinerario enviado: ', itineraryUrl);
       // Retornar la URL del itinerario a Chatfuel
       res.status(200).json({
-      success: true,
-      itinerary: itineraryUrl
-    });
+        success: true,
+        itinerary: itineraryUrl
+      });
     } catch (error) {
       console.error('Error al procesar la solicitud de itinerario:', error);
       res.status(200).json('No se encontró itinerario disponible.');
