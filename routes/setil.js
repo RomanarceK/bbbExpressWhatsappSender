@@ -1,8 +1,9 @@
 const { Router } = require('express');
 const router = Router();
 const { getSheetData } = require('../googleApiAuth');
-const { getConversationNewUI, saveConversationNewUI } = require('../hooks/useConversations');
+const { getConversationNewUI, saveConversationNewUI, updateLastReadTimestamp } = require('../hooks/useConversations');
 const axios = require('axios');
+const { getIO } = require('../socket');
 
 router.post('/get-itinerary-url', async (req, res) => {
     try {
@@ -139,14 +140,12 @@ router.post('/ask', async (req, res) => {
     }
 
     // Agregar la nueva pregunta al historial
-    conversationHistory.push(`role: user, content: ${question}`);
+    conversationHistory.push(`role: user, content: ${question}, timestamp: ${new Date()}`);
     let cutConversationHistory = [];
-    // Mantener solo las últimas 20 entradas
     if (conversationHistory.length > 12) {
       cutConversationHistory = conversationHistory.slice(-12);
     }
 
-    // Llamar al servicio en Cloud Run para obtener la respuesta generada
     const response = await axios.post(cloudRunUrl, {
       query: question,
       history: cutConversationHistory
@@ -159,12 +158,28 @@ router.post('/ask', async (req, res) => {
     console.log('SETIL RESPONSE: ', response.data.response);
 
     // Agregar la respuesta del asistente al historial
-    conversationHistory.push(`role: assistant, content: ${answer}`);
+    conversationHistory.push(`role: assistant, content: ${answer}, timestamp: ${new Date()}`);
 
     // Guardar el historial de la conversación actualizado
     await saveConversationNewUI(userId, conversationHistory, username, phone, 'setil');
 
-    // Retornar la respuesta generada a Chatfuel
+    const conversationId = await getConversationNewUI(userId, 'setil', true);
+    
+    const io = getIO();
+    io.emit('newMessage', {
+      conversationId: conversationId,
+      messages: [
+        {
+          role: 'user',
+          content: `role: user, content: ${question}, timestamp: ${new Date()}`
+        },
+        {
+          role: 'assistant',
+          content: `role: assistant, content: ${answer}, timestamp: ${new Date()}`
+        }
+      ]
+    });
+
     res.status(200).json({
       success: true,
       answer: answer

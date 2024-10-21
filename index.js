@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 require("dotenv").config();
+const http = require('http');
+const { initSocketIO } = require('./socket');
 const { expressjwt: jwt } = require('express-jwt');
 const jwksRsa = require('jwks-rsa');
 const { connectToDatabase } = require('./mongodb');
@@ -12,10 +14,12 @@ const wodaRoutes = require('./routes/woda');
 const bbbExpressRoutes = require('./routes/bbb-express');
 const gilettaRoutes = require('./routes/estudio-giletta');
 const slackRoutes = require('./routes/slack-live');
-const allowedOrigins = ['https://interfaz-avi.onrender.com', 'http://localhost:3000', 'https://avi-flyup.ar', 'http://127.0.0.1:5500', 'https://flyup.ar'];
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
+
+const server = http.createServer(app);
+initSocketIO(server);
 
 const checkJwt = jwt({
   secret: jwksRsa.expressJwtSecret({
@@ -48,6 +52,6 @@ app.use('/api/giletta', gilettaRoutes);
 app.use('/api/slack', slackRoutes);
 app.use('/api/woda', wodaRoutes);
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server listening on port: ${port}`);
 });
