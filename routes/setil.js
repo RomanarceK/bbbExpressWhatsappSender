@@ -190,4 +190,75 @@ router.post('/ask', async (req, res) => {
   }
 });
 
+router.post('/ask-v2', async (req, res) => {
+  try {
+    const cloudRunUrl = 'https://setil-v2-app-619713117025.us-central1.run.app/generate-response/';
+    const { question, userid, username, phone, category, date, type, transport, region } = req.body;
+
+    if (!userid || !question) {
+      return res.status(400).json({ success: false, error: 'El userId y la pregunta son requeridos' });
+    }
+
+    let conversationHistory = await getConversationNewUI(userid, 'setil');
+
+    if (!conversationHistory || conversationHistory === "Accepted") {
+      conversationHistory = [];
+    }
+
+    conversationHistory.push(`role: user, content: ${question}, timestamp: ${new Date()}`);
+    let cutConversationHistory = [];
+    if (conversationHistory.length > 12) {
+      cutConversationHistory = conversationHistory.slice(-12);
+    }
+
+    const response = await axios.post(cloudRunUrl, {
+      query: question,
+      history: cutConversationHistory,
+      parameters: {
+        category,
+        date,
+        type,
+        transport,
+        region
+      }
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const answer = response.data.response;
+
+    conversationHistory.push(`role: assistant, content: ${answer}, timestamp: ${new Date()}`);
+
+    await saveConversationNewUI(userid, conversationHistory, username, phone, 'setil');
+
+    const conversationId = await getConversationNewUI(userid, 'setil', true);
+
+    const io = getIO();
+    io.emit('newMessage', {
+      conversationId: conversationId,
+      messages: [
+        {
+          role: 'user',
+          content: `role: user, content: ${question}, timestamp: ${new Date()}`
+        },
+        {
+          role: 'assistant',
+          content: `role: assistant, content: ${answer}, timestamp: ${new Date()}`
+        }
+      ]
+    });
+
+    res.status(200).json({
+      success: true,
+      answer: answer
+    });
+  } catch (error) {
+    console.error('Error al procesar con ChatGPT:', error);
+    res.status(500).json({ success: false, error: 'Error al procesar con ChatGPT' });
+  }
+});
+
+
 module.exports = router;
