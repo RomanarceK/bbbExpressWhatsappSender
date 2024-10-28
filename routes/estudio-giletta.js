@@ -3,6 +3,7 @@ const router = Router();
 const { getConversationNewUI, saveConversationNewUI } = require('../hooks/useConversations');
 const { getConversation, saveConversation } = require('../hooks/useMake');
 const axios = require('axios');
+const { getIO } = require('../socket');
 
 router.post('/ask', async (req, res) => {
   try {
@@ -23,18 +24,16 @@ router.post('/ask', async (req, res) => {
       conversationHistory = [];
     }
 
-    // Agregar la nueva pregunta al historial
-    conversationHistory.push(`role: user, content: ${question}`);
-
-    // Mantener solo las últimas 20 entradas
-    if (conversationHistory.length > 20) {
-      conversationHistory = conversationHistory.slice(-20);
+    conversationHistory.push(`role: user, content: ${question}, timestamp: ${new Date()}`);
+    let cutConversationHistory = [];
+    if (conversationHistory.length > 12) {
+      cutConversationHistory = conversationHistory.slice(-12);
     }
 
     // Llamar al servicio en Cloud Run para obtener la respuesta generada
     const response = await axios.post(cloudRunUrl, {
       query: question,
-      history: conversationHistory
+      history: cutConversationHistory
     }, {
       headers: {
         'Content-Type': 'application/json'
@@ -43,13 +42,29 @@ router.post('/ask', async (req, res) => {
 
     const answer = response.data.response;
     console.log('GILETTA RESPONSE: ', response.data.response);
+    
     // Agregar la respuesta del asistente al historial
-    conversationHistory.push(`role: assistant, content: ${answer}`);
+    conversationHistory.push(`role: assistant, content: ${answer}, timestamp: ${new Date()}`);
 
     // Guardar el historial de la conversación actualizado
     await saveConversationNewUI(userId, conversationHistory, username, phone, 'giletta');
+    const conversationId = await getConversationNewUI(userId, 'giletta', true);
 
-    // Retornar la respuesta generada a Chatfuel
+    const io = getIO();
+    io.emit('newMessage', {
+      conversationId: conversationId,
+      messages: [
+        {
+          role: 'user',
+          content: `role: user, content: ${question}, timestamp: ${new Date()}`
+        },
+        {
+          role: 'assistant',
+          content: `role: assistant, content: ${answer}, timestamp: ${new Date()}`
+        }
+      ]
+    });
+
     res.status(200).json(answer);
   } catch (error) {
     console.error('Error al procesar con ChatGPT:', error);
@@ -78,16 +93,15 @@ router.post('/ask-giletta-ig', async (req, res) => {
 
     // Agregar la nueva pregunta al historial
     conversationHistory.push(`role: user, content: ${question}`);
-
-    // Mantener solo las últimas 20 entradas
-    if (conversationHistory.length > 20) {
-      conversationHistory = conversationHistory.slice(-20);
+    let cutConversationHistory = [];
+    if (conversationHistory.length > 12) {
+      cutConversationHistory = conversationHistory.slice(-12);
     }
 
     // Llamar al servicio en Cloud Run para obtener la respuesta generada
     const response = await axios.post(cloudRunUrl, {
       query: question,
-      history: conversationHistory
+      history: cutConversationHistory
     }, {
       headers: {
         'Content-Type': 'application/json'
@@ -95,7 +109,7 @@ router.post('/ask-giletta-ig', async (req, res) => {
     });
 
     const answer = response.data.response;
-    console.log('GILETTA RESPONSE: ', response.data.response);
+    console.log('GILETTA IG RESPONSE: ', response.data.response);
     // Agregar la respuesta del asistente al historial
     conversationHistory.push(`role: assistant, content: ${answer}`);
 
