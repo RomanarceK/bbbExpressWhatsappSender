@@ -207,8 +207,8 @@ router.post('/ask-v2', async (req, res) => {
 
     conversationHistory.push(`role: user, content: ${question}, timestamp: ${new Date()}`);
     let cutConversationHistory = [];
-    if (conversationHistory.length > 12) {
-      cutConversationHistory = conversationHistory.slice(-12);
+    if (conversationHistory.length > 6) {
+      cutConversationHistory = conversationHistory.slice(-6);
     }
 
     const response = await axios.post(cloudRunUrl, {
