@@ -7,7 +7,7 @@ const { getIO } = require('../socket');
 
 router.post('/ask', async (req, res) => {
     try {
-      const cloudRunUrl = 'http://0.0.0.0:8080/generate-response/';
+      const cloudRunUrl = 'https://buenamesa-app-619713117025.us-central1.run.app/generate-response/';
       const { question, userid, username, phone } = req.body;
   
       if (!userid || !question) {
