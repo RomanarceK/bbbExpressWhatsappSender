@@ -15,6 +15,7 @@ const bbbExpressRoutes = require('./routes/bbb-express');
 const gilettaRoutes = require('./routes/estudio-giletta');
 const slackRoutes = require('./routes/slack-live');
 const ealgroupRoutes = require('./routes/ealgroup');
+const buenamesaRoutes = require('./routes/buenamesa');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -53,6 +54,7 @@ app.use('/api/giletta', gilettaRoutes);
 app.use('/api/slack', slackRoutes);
 app.use('/api/woda', wodaRoutes);
 app.use('/api/ealgroup', ealgroupRoutes);
+app.use('/api/buenamesa', buenamesaRoutes);
 
 server.listen(port, () => {
   console.log(`Server listening on port: ${port}`);
