@@ -49,7 +49,10 @@ router.post('/ask', async (req, res) => {
     await saveConversationNewUI(userId, conversationHistory, username, phone, 'portaldelsol');
 
     // Retornar la respuesta generada a Chatfuel
-    res.status(200).json(answer);
+    res.status(200).json({
+      success: true,
+      answer: answer
+    });
   } catch (error) {
     console.error('Error al procesar con ChatGPT:', error);
     res.status(500).json({ success: false, error: 'Error al procesar con ChatGPT' });
