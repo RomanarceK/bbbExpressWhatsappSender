@@ -5,7 +5,7 @@ const axios = require('axios');
 
 router.post('/ask', async (req, res) => {
   try {
-    const cloudRunUrl = 'https://woda-app-619713117025.us-central1.run.app/generate-response/';
+    const cloudRunUrl = 'http://0.0.0.0:8080/generate-response/';
     const question = req.body.question;
     const userId = req.body.userid;
     const username = req.body.username;
@@ -16,7 +16,7 @@ router.post('/ask', async (req, res) => {
     }
 
     // Obtener el historial de la conversación
-    let conversationHistory = await getConversationNewUI(userId, 'woda');
+    let conversationHistory = await getConversationNewUI(userId, 'portaldelsol');
 
     if (!conversationHistory || conversationHistory == "Accepted") {
       conversationHistory = [];
@@ -40,13 +40,13 @@ router.post('/ask', async (req, res) => {
       }
     });
     const answer = response.data.response;
-    console.log('WODA RESPONSE: ', response.data.response);
+    console.log('PORTAL DEL SOL RESPONSE: ', response.data.response);
 
     // Agregar la respuesta del asistente al historial
     conversationHistory.push(`role: assistant, content: ${answer}`);
 
     // Guardar el historial de la conversación actualizado
-    await saveConversationNewUI(userId, conversationHistory, username, phone, 'woda');
+    await saveConversationNewUI(userId, conversationHistory, username, phone, 'portaldelsol');
 
     // Retornar la respuesta generada a Chatfuel
     res.status(200).json(answer);
