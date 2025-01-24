@@ -37,6 +37,38 @@ router.post('/send-message', async (req, res) => {
     res.status(500).send(`Error al enviar mensaje: ${error.message}`);
   }
 });
+
+router.post('/send-bulk-message', async (req, res) => {
+  const phone = req.body.number;
+  try {
+    const response = await client.messages.create({
+      contentSid: 'HX43d959045b3f0b9ade06d80c06db5bd6',
+      from: 'whatsapp:+17074021487',
+      messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
+      to: `whatsapp:${phone}`
+    });
+
+    if (response.sid) {
+      console.log(`Mensaje enviado a WhatsApp: ${phone}`);
+      res.status(200).send({
+        success: true,
+        message: `Mensaje enviado exitosamente a: ${phone}`
+      });
+    } else {
+      console.error('Error al enviar mensaje, respuesta sin SID.');
+      res.status(500).send({
+        success: false,
+        message: `Error al enviar mensaje, respuesta sin SID.`
+      });
+    }
+  } catch (error) {
+    console.error(`Error al enviar mensaje: ${error.message}`);
+    res.status(500).send({
+      success: false,
+      message: error.message
+    });
+  }
+});
   
 router.post('/nuevo-pedido', async (req, res) => {
   const userData = req.body;
