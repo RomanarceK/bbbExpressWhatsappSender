@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const router = Router();
 const { getSheetData } = require('../googleApiAuth');
-const { getConversationNewUI, saveConversationNewUI, updateLastReadTimestamp } = require('../hooks/useConversations');
+const { getConversationNewUI, saveConversationNewUI } = require('../hooks/useConversations');
 const axios = require('axios');
 const { getIO } = require('../socket');
 

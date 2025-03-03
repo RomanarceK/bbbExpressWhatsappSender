@@ -52,39 +52,51 @@ router.post('/unread-messages', async (req, res) => {
   }
 
   try {
-    const unreadCounts = {};
     const readStatusCollection = getCollection('read-status');
     const conversationCollection = getCollection(`${client}-conversations`);
+    const objectIds = conversationIds.map(id => new ObjectId(id));
 
-    for (const conversationId of conversationIds) {
-      const readStatus = await readStatusCollection.findOne({ userId, conversationId });
-      const lastReadTimestamp = readStatus ? new Date(readStatus.lastReadTimestamp) : new Date(0);
-      const conversation = await conversationCollection.findOne({ _id: new ObjectId(conversationId) });
+    const readStatusesArray = await readStatusCollection
+      .find({ userId, conversationId: { $in: conversationIds } })
+      .toArray();
+
+    const readStatusMap = {};
+    readStatusesArray.forEach(status => {
+      readStatusMap[status.conversationId] = new Date(status.lastReadTimestamp);
+    });
+
+    const conversationsArray = await conversationCollection
+      .find({ _id: { $in: objectIds } }, { projection: { content: 1 } })
+      .toArray();
+
+    const conversationMap = {};
+    conversationsArray.forEach(conv => {
+      conversationMap[conv._id.toString()] = conv;
+    });
+
+    const unreadCounts = {};
+    conversationIds.forEach(conversationId => {
+      const lastReadTimestamp = readStatusMap[conversationId] || new Date(0);
+      const conversation = conversationMap[conversationId];
 
       if (!conversation || !Array.isArray(conversation.content)) {
         unreadCounts[conversationId] = 0;
-        continue;
+        return;
       }
 
-      // Filtrar los mensajes no leídos por role: 'user' y timestamp mayor que lastReadTimestamp
-      const unreadMessages = conversation.content.filter((message) => {
-        // Verifica que el mensaje tenga el role 'user' y un timestamp válido
+      const unreadMessages = conversation.content.filter(message => {
         const roleMatch = message.match(/role: user/);
         const timestampMatch = message.match(/timestamp: (.+)$/);
-
         if (!roleMatch || !timestampMatch || !timestampMatch[1]) {
-          return false; // Ignora los mensajes que no tengan role 'user' o no tengan timestamp
+          return false;
         }
-
         const messageTimestamp = new Date(timestampMatch[1]).getTime();
-        const lastRead = new Date(lastReadTimestamp).getTime();
-
-        // Solo contar el mensaje si es posterior al último leído y tiene el role 'user'
+        const lastRead = lastReadTimestamp.getTime();
         return messageTimestamp > lastRead;
       });
 
       unreadCounts[conversationId] = unreadMessages.length;
-    }
+    });
 
     res.status(200).json({ unreadCounts });
   } catch (error) {
