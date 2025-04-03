@@ -183,6 +183,8 @@ router.post('/ask-bbbexpress', async (req, res) => {
     let cutConversationHistory = [];
     if (conversationHistory.length > 20) {
       cutConversationHistory = conversationHistory.slice(-20);
+    } else {
+      cutConversationHistory = conversationHistory;
     }
 
     // Llamar al servicio en Cloud Run para obtener la respuesta generada

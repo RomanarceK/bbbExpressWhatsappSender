@@ -28,6 +28,8 @@ router.post('/ask', async (req, res) => {
     // Mantener solo las últimas 20 entradas
     if (conversationHistory.length > 12) {
       cutConversationHistory = conversationHistory.slice(-12);
+    } else {
+      cutConversationHistory = conversationHistory;
     }
 
     // Llamar al servicio en Cloud Run para obtener la respuesta generada
