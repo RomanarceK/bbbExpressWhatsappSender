@@ -4,6 +4,8 @@ const { getConversationNewUI, saveConversationNewUI } = require('../hooks/useCon
 const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const axios = require('axios');
 
+const recipients = ['whatsapp:+5493564339696','whatsapp:+5493564608853','whatsapp:+5493564230046'];
+
 router.post('/ask', async (req, res) => {
   try {
     const cloudRunUrl = 'https://portaldelsol-app-619713117025.us-central1.run.app/generate-response/';
@@ -66,29 +68,32 @@ router.post('/terrenos-notify', async (req, res) => {
   const { zona, username, phone, payment } = req.body;
 
   try {
-    const response = await client.messages.create({
-      contentSid: 'HX3eef5d7b07de6de52f8cfbea7b4f317c',
-      from: 'whatsapp:+17074021487',
-      contentVariables: JSON.stringify({
-        1: username,
-        2: zona,
-        3: payment,
-        4: phone,
-      }),
-      messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
-      to: 'whatsapp:+5493564339696'
-    });
+    const results = await Promise.allSettled(recipients.map(async (recipient) => {
+      return await client.messages.create({
+        contentSid: 'HX3eef5d7b07de6de52f8cfbea7b4f317c',
+        from: 'whatsapp:+17074021487',
+        contentVariables: JSON.stringify({
+          1: username,
+          2: zona,
+          3: payment,
+          4: phone,
+        }),
+        messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
+        to: recipient
+      });
+    }));
 
-    if (response.sid) {
-      console.log(`Mensaje enviado a WhatsApp: ${phone}`);
-      res.status(200).json({success: true, message: 'Mensaje enviado a WhatsApp'});
-    } else {
-      console.error('Error al enviar mensaje, respuesta sin SID.');
-      res.status(500).send('Error al enviar mensaje');
-    }
+    const successful = results.filter(r => r.status === 'fulfilled');
+    const failed = results.filter(r => r.status === 'rejected');
+
+    res.status(200).json({
+      success: true,
+      sent: successful.length,
+      failed: failed.length,
+    });
   } catch (error) {
-    console.error(`Error al enviar mensaje: ${error.message}`);
-    res.status(500).send(`Error al enviar mensaje: ${error.message}`);
+    console.error(`Error al enviar mensajes: ${error.message}`);
+    res.status(500).send(`Error al enviar mensajes: ${error.message}`);
   }
 });
 
@@ -96,57 +101,63 @@ router.post('/casas-notify', async (req, res) => {
   const { username, phone, payment } = req.body;
 
   try {
-    const response = await client.messages.create({
-      contentSid: 'HX75e67318b0ccf7f79a5151cb359c9fa5',
-      from: 'whatsapp:+17074021487',
-      contentVariables: JSON.stringify({
-        1: username,
-        2: payment,
-        3: phone,
-      }),
-      messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
-      to: 'whatsapp:+5493564339696'
-    });
+    const results = await Promise.allSettled(recipients.map(async (recipient) => {
+      return await client.messages.create({
+        contentSid: 'HX75e67318b0ccf7f79a5151cb359c9fa5',
+        from: 'whatsapp:+17074021487',
+        contentVariables: JSON.stringify({
+          1: username,
+          2: payment,
+          3: phone,
+        }),
+        messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
+        to: recipient
+      });
+    }));
 
-    if (response.sid) {
-      console.log(`Mensaje enviado a WhatsApp: ${phone}`);
-      res.status(200).json({success: true, message: 'Mensaje enviado a WhatsApp'});
-    } else {
-      console.error('Error al enviar mensaje, respuesta sin SID.');
-      res.status(500).send('Error al enviar mensaje');
-    }
+    const successful = results.filter(r => r.status === 'fulfilled');
+    const failed = results.filter(r => r.status === 'rejected');
+
+    res.status(200).json({
+      success: true,
+      sent: successful.length,
+      failed: failed.length,
+    });
   } catch (error) {
-    console.error(`Error al enviar mensaje: ${error.message}`);
-    res.status(500).send(`Error al enviar mensaje: ${error.message}`);
+    console.error(`Error al enviar mensajes: ${error.message}`);
+    res.status(500).send(`Error al enviar mensajes: ${error.message}`);
   }
 });
 
-router.post('/casas-notify', async (req, res) => {
-  const { username, phone, payment } = req.body;
+router.post('/alquileres-notify', async (req, res) => {
+  const { username, phone, type } = req.body;
 
   try {
-    const response = await client.messages.create({
-      contentSid: 'HX75e67318b0ccf7f79a5151cb359c9fa5',
-      from: 'whatsapp:+17074021487',
-      contentVariables: JSON.stringify({
-        1: username,
-        2: payment,
-        3: phone,
-      }),
-      messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
-      to: 'whatsapp:+5493564339696'
-    });
+    const results = await Promise.allSettled(recipients.map(async (recipient) => {
+      return await client.messages.create({
+        contentSid: 'HX65724814a071f2a40168248311d77054',
+        from: 'whatsapp:+17074021487',
+        contentVariables: JSON.stringify({
+          1: username,
+          2: type,
+          3: phone,
+        }),
+        messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
+        to: recipient
+      });
+    }));
 
-    if (response.sid) {
-      console.log(`Mensaje enviado a WhatsApp: ${phone}`);
-      res.status(200).json({success: true, message: 'Mensaje enviado a WhatsApp'});
-    } else {
-      console.error('Error al enviar mensaje, respuesta sin SID.');
-      res.status(500).send('Error al enviar mensaje');
-    }
+    const successful = results.filter(r => r.status === 'fulfilled');
+    const failed = results.filter(r => r.status === 'rejected');
+
+    res.status(200).json({
+      success: true,
+      sent: successful.length,
+      failed: failed.length,
+    });
   } catch (error) {
-    console.error(`Error al enviar mensaje: ${error.message}`);
-    res.status(500).send(`Error al enviar mensaje: ${error.message}`);
+    console.error(`Error al enviar mensajes: ${error.message}`);
+    res.status(500).send(`Error al enviar mensajes: ${error.message}`);
   }
 });
 
