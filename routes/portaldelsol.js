@@ -24,7 +24,7 @@ router.post('/ask', async (req, res) => {
     }
 
     // Agregar la nueva pregunta al historial
-    conversationHistory.push(`role: user, content: ${question}`);
+    conversationHistory.push(`role: user, content: ${question}, timestamp: ${new Date().toISOString()}`);
     let cutConversationHistory = [];
     // Mantener solo las últimas 20 entradas
     if (conversationHistory.length > 12) {
@@ -46,7 +46,7 @@ router.post('/ask', async (req, res) => {
     console.log('PORTAL DEL SOL RESPONSE: ', response.data.response);
 
     // Agregar la respuesta del asistente al historial
-    conversationHistory.push(`role: assistant, content: ${answer}`);
+    conversationHistory.push(`role: assistant, content: ${answer}, timestamp: ${new Date().toISOString()}`);
 
     // Guardar el historial de la conversación actualizado
     await saveConversationNewUI(userId, conversationHistory, username, phone, 'portaldelsol');
@@ -74,6 +74,35 @@ router.post('/terrenos-notify', async (req, res) => {
         2: zona,
         3: payment,
         4: phone,
+      }),
+      messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
+      to: 'whatsapp:+5493564339696'
+    });
+
+    if (response.sid) {
+      console.log(`Mensaje enviado a WhatsApp: ${phone}`);
+      res.status(200).json({success: true, message: 'Mensaje enviado a WhatsApp'});
+    } else {
+      console.error('Error al enviar mensaje, respuesta sin SID.');
+      res.status(500).send('Error al enviar mensaje');
+    }
+  } catch (error) {
+    console.error(`Error al enviar mensaje: ${error.message}`);
+    res.status(500).send(`Error al enviar mensaje: ${error.message}`);
+  }
+});
+
+router.post('/casas-notify', async (req, res) => {
+  const { username, phone, payment } = req.body;
+
+  try {
+    const response = await client.messages.create({
+      contentSid: 'HX75e67318b0ccf7f79a5151cb359c9fa5',
+      from: 'whatsapp:+17074021487',
+      contentVariables: JSON.stringify({
+        1: username,
+        2: payment,
+        3: phone,
       }),
       messagingServiceSid: 'MG697fa907221a26b2da9cbc99068577b1',
       to: 'whatsapp:+5493564339696'
