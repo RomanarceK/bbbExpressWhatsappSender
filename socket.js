@@ -5,7 +5,7 @@ let io;
 const initSocketIO = (server) => {
   io = new Server(server, {
     cors: {
-      origin: ['https://interfaz-avi.onrender.com', 'http://localhost:3000', 'https://avi-flyup.ar'],
+      origin: ['https://interfaz-avi.onrender.com', 'http://localhost:3000', 'https://avi-flyup.ar', 'https://aira-admin.onrender.com'],
       credentials: true
     }
   });

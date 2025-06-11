@@ -8,7 +8,7 @@ async function connectToDatabase() {
     try {
       client = new MongoClient(process.env.MONGO_DB_URI);
       await client.connect();
-      db = client.db('avi-conversations-db');
+      db = client.db('aira-conversations-db');
       db.command({ping:1});
       console.log("Conectado exitosamente a MongoDB");
 

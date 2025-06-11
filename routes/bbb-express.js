@@ -159,7 +159,7 @@ router.post('/crear-pedido', (req, res) => {
 
 router.post('/ask-bbbexpress', async (req, res) => {
   try {
-    const cloudRunUrl = 'https://bbbexpress-app-619713117025.us-central1.run.app/generate-response/';
+    const cloudRunUrl = 'https://bbbexpress-app-680874547105.us-east1.run.app/generate-response/';
     const question = req.body.question;
     const userId = req.body.userid;
     const getUrl = "https://hook.eu2.make.com/ycaamvx16hpp483or9st54ex52fd2hjn";

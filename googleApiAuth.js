@@ -4,7 +4,7 @@ const path = require('path');
 
 // Cargar las credenciales del archivo JSON
 const auth = new google.auth.GoogleAuth({
-  keyFile: path.join(__dirname, 'itinerarios-urls-credentials.json'),
+  keyFile: path.join(__dirname, 'extreme-minutia-462015-n4-e040c27f7cc1.json'),
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 

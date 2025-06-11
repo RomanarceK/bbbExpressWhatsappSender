@@ -8,7 +8,7 @@ const recipients = ['whatsapp:+5493564339696','whatsapp:+5493564608853','whatsap
 
 router.post('/ask', async (req, res) => {
   try {
-    const cloudRunUrl = 'https://portaldelsol-app-619713117025.us-central1.run.app/generate-response/';
+    const cloudRunUrl = 'https://portaldelsol-app-680874547105.us-east1.run.app/generate-response/';
     const question = req.body.question;
     const userId = req.body.userid;
     const username = req.body.username;

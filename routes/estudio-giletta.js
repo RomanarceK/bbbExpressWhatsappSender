@@ -7,7 +7,7 @@ const { getIO } = require('../socket');
 
 router.post('/ask', async (req, res) => {
   try {
-    const cloudRunUrl = 'https://giletta-app-619713117025.us-central1.run.app/generate-response/';
+    const cloudRunUrl = 'https://giletta-app-680874547105.us-east1.run.app/generate-response/';
     const question = req.body.question;
     const userId = req.body.userid;
     const username = req.body.username;
@@ -76,7 +76,7 @@ router.post('/ask', async (req, res) => {
 
 router.post('/ask-giletta-ig', async (req, res) => {
   try {
-    const cloudRunUrl = 'https://giletta-ig-app-619713117025.us-central1.run.app/generate-response/';
+    const cloudRunUrl = 'https://giletta-app-680874547105.us-east1.run.app/generate-response/';
     const question = req.body.question;
     const userId = req.body.userid;
     const getUrl = "https://hook.eu2.make.com/bed73d1m8wx66k7w2gqeo5284wjjkwbr";
